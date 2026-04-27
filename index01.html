@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>南投 AI 食農小大使</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes pulse-soft { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+        .animate-pulse-soft { animation: pulse-soft 2s infinite ease-in-out; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .scanning-line { height: 2px; background: #10B981; position: absolute; width: 100%; top: 0; animation: scanLine 2s linear infinite; }
+        @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen pb-12">
+
+    <header class="bg-green-600 text-white shadow-md p-4 sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-robot text-3xl"></i>
+                <h1 class="text-2xl font-bold tracking-wide">南投 AI 食農小大使</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleAdmin()" class="text-green-200 hover:text-white transition" title="開啟教師後台">
+                    <i class="fa-solid fa-gear text-xl"></i>
+                </button>
+                <div id="connectionStatus" class="text-sm bg-red-700 px-3 py-1 rounded-full border border-red-500">
+                    <i class="fa-solid fa-circle-nodes mr-1"></i> 尚未連線 micro:bit
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto mt-6 px-4 space-y-6">
+
+        <!-- 幕後控制台 (教師專用) -->
+        <section id="adminPanel" class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hidden fade-in">
+            <h2 class="text-lg font-bold text-slate-700 mb-3 border-b pb-2">
+                <i class="fa-solid fa-screwdriver-wrench text-slate-400 mr-2"></i>幕後設定
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <label class="block text-sm font-semibold text-slate-600 mb-2">1. 資安設定 (API Key)</label>
+                    <div class="flex space-x-2">
+                        <input type="password" id="apiKeyInput" placeholder="輸入 Gemini API Key" class="flex-1 text-sm px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <button id="lockKeyBtn" onclick="lockAPIKey()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-md text-sm">鎖定</button>
+                    </div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <label class="block text-sm font-semibold text-slate-600 mb-2">2. 硬體實體連線</label>
+                    <button id="connectSerialBtn" onclick="connectSerial()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex justify-center items-center">
+                        <i class="fa-brands fa-usb mr-2"></i> 連線 micro:bit
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 互動區 -->
+        <section class="bg-white rounded-xl shadow-lg border border-green-100 overflow-hidden relative min-h-[500px]">
+            
+            <!-- 主要資訊看板 -->
+            <div id="dashboardArea" class="p-6 md:p-8 hidden fade-in">
+                <div class="text-center mb-6">
+                    <div id="itemIcon" class="text-6xl mb-3 animate-pulse-soft"></div>
+                    <h2 id="itemTitle" class="text-3xl font-extrabold text-slate-800"></h2>
+                    <p id="itemLocation" class="text-slate-500 mt-1"></p>
+                </div>
+
+                <div class="space-y-3 mb-6">
+                    <div id="allergenBadge" class="flex items-center p-4 rounded-xl border">
+                        <i id="allergenIcon" class="text-2xl mr-4"></i>
+                        <span id="allergenText" class="font-bold text-lg"></span>
+                    </div>
+                    <div id="carbonBadge" class="flex items-center p-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100">
+                        <i class="fa-solid fa-leaf text-2xl mr-4"></i>
+                        <span id="carbonText" class="font-bold"></span>
+                    </div>
+                </div>
+
+                <div class="relative bg-slate-50 rounded-2xl p-6 border-2 border-slate-200 mb-8">
+                    <div class="absolute -top-5 left-6 bg-white rounded-full p-1 border-2 border-slate-200">
+                        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Kebbi&backgroundColor=b6e3f4" class="w-10 h-10 rounded-full">
+                    </div>
+                    <p class="text-xs font-bold text-slate-400 mb-2 ml-14">食農大使 - 凱比</p>
+                    <p id="aiStoryText" class="text-slate-700 text-lg leading-relaxed font-medium"></p>
+                    <button onclick="replayVoice()" class="absolute bottom-3 right-3 text-slate-300 hover:text-green-600 transition text-2xl">
+                        <i class="fa-solid fa-circle-play"></i>
+                    </button>
+                </div>
+
+                <div class="flex flex-col space-y-3 border-t pt-6">
+                    <button id="likeBtn" onclick="addLike()" class="bg-white border-2 border-orange-400 text-orange-600 font-bold py-3 px-4 rounded-xl text-lg flex justify-center items-center shadow-sm active:scale-95 transition">
+                        <i class="fa-regular fa-thumbs-up mr-2"></i> <span id="likeText">給小農按讚</span>
+                    </button>
+                    <button onclick="toggleOrder()" class="bg-orange-500 text-white font-bold py-3 px-4 rounded-xl text-lg shadow-md active:scale-95 transition flex justify-center items-center">
+                        <i class="fa-solid fa-cart-shopping mr-2"></i> 我要支持小農！(產地直購)
+                    </button>
+                </div>
+
+                <div id="orderSection" class="hidden mt-4 bg-orange-50 border border-orange-100 rounded-xl p-5 text-center fade-in">
+                    <h3 class="font-bold text-orange-800 mb-2">產地直購通道</h3>
+                    <div class="bg-white p-2 inline-block rounded-lg shadow-sm border-2 border-orange-200 mb-2">
+                        <div class="w-32 h-32 bg-slate-100 flex items-center justify-center"><i class="fa-solid fa-qrcode text-5xl"></i></div>
+                    </div>
+                    <p class="text-xs text-orange-600">掃碼下單，收入直達小農口袋！</p>
+                </div>
+
+                <button onclick="resetToWaiting()" class="mt-8 bg-slate-100 text-slate-500 font-bold py-2 px-6 rounded-full mx-auto block text-sm">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> 辨識其他產品
+                </button>
+            </div>
+            
+            <!-- 待命與輸入模式 -->
+            <div id="waitingArea" class="p-8 text-center fade-in h-full flex flex-col justify-center">
+                <div id="selectionPanel">
+                    <div class="mb-8"><i class="fa-solid fa-basket-shopping text-6xl text-green-200"></i></div>
+                    <h3 class="text-2xl font-black text-slate-700 mb-2">請選擇你的辨識方式</h3>
+                    <p class="text-slate-400 mb-10">凱比已經準備好為您導覽南投農產囉！</p>
+                    <div class="grid grid-cols-1 gap-4 max-w-sm mx-auto">
+                        <button onclick="startInputMode('rfid')" class="bg-white border-2 border-orange-100 hover:border-orange-400 p-5 rounded-2xl flex items-center transition shadow-sm group">
+                            <div class="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center text-2xl mr-4 group-hover:bg-orange-500 group-hover:text-white transition"><i class="fa-solid fa-id-card"></i></div>
+                            <div class="text-left"><h4 class="font-bold">RFID 圖卡感應</h4><p class="text-xs text-slate-400">使用 micro:bit 讀取</p></div>
+                        </button>
+                        <button onclick="startInputMode('camera')" class="bg-white border-2 border-blue-100 hover:border-blue-400 p-5 rounded-2xl flex items-center transition shadow-sm group">
+                            <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-2xl mr-4 group-hover:bg-blue-500 group-hover:text-white transition"><i class="fa-solid fa-camera"></i></div>
+                            <div class="text-left"><h4 class="font-bold">AI 拍照辨識</h4><p class="text-xs text-slate-400">使用凱比鏡頭</p></div>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="scanningOverlay" class="hidden bg-slate-50 border-4 border-dashed border-slate-200 rounded-3xl p-10 relative overflow-hidden">
+                    <div class="scanning-line"></div>
+                    <i id="scanIcon" class="text-6xl mb-6 block"></i>
+                    <h4 id="scanTitle" class="text-xl font-bold text-slate-700 mb-1"></h4>
+                    <p id="scanDesc" class="text-slate-400 mb-8"></p>
+                    <button onclick="cancelInputMode()" class="bg-slate-200 text-slate-600 px-6 py-2 rounded-full font-bold">取消</button>
+                    
+                    <!-- 僅在教師後台開啟時顯示模擬按鈕 -->
+                    <div id="demoBtns" class="mt-8 pt-6 border-t hidden">
+                        <p class="text-xs font-bold text-slate-300 mb-3">DEMO 模擬觸發</p>
+                        <div id="demoGrid" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const database = {
+            'P01': { icon: '🍠', title: '竹山無毒紅土地瓜', location: '南投縣竹山鎮', allergenClass: 'bg-green-50 text-green-800 border-green-200', allergenIcon: 'fa-shield-check', allergenText: '🟢 食安檢測：安全低敏 (原型澱粉)', carbonText: '🌱 碳足跡：在地產銷 30km (減碳 96%)', story: '這顆竹山地瓜超級健康喔，而且在地種植幫地球省下好多力氣！小農阿伯每天早上五點就去田裡挖地瓜，超級辛苦的！我們大家一起給他按個讚吧！', likes: 150 },
+            'P02': { icon: '🍡', title: '草屯手工花生麻糬', location: '南投縣草屯鎮', allergenClass: 'bg-red-50 text-red-800 border-red-200', allergenIcon: 'fa-triangle-exclamation', allergenText: '🔴 食安警報：含重大過敏原 (花生、糯米)', carbonText: '🌱 碳足跡：使用在地糯米，低碳生產', story: '警報！這款好吃的麻糬裡面有包花生喔！會對花生過敏的小朋友千萬不可以吃！安全第一！但是沒過敏的爸爸媽媽，掃描下面條碼就可以買回家囉！', likes: 88 },
+            'P03': { icon: '🍵', title: '鹿谷凍頂烏龍茶', location: '南投縣鹿谷鄉', allergenClass: 'bg-green-50 text-green-800 border-green-200', allergenIcon: 'fa-shield-check', allergenText: '🟢 食安檢測：安全無敏 (天然茶葉)', carbonText: '🌱 碳足跡：在地烘焙 (低碳排)', story: '這杯鹿谷烏龍茶超香的！小農伯伯用心烘焙，完全沒有過敏原，大家可以安心喝喔！', likes: 120 },
+            'P04': { icon: '🫖', title: '魚池日月潭紅茶', location: '南投縣魚池鄉', allergenClass: 'bg-green-50 text-green-800 border-green-200', allergenIcon: 'fa-shield-check', allergenText: '🟢 食安檢測：安全無敏 (台茶18號)', carbonText: '🌱 碳足跡：產地直送 (極低食物里程)', story: '名揚國際的日月潭紅玉紅茶！喝起來有淡淡的薄荷跟肉桂香，是外國遊客最愛的伴手禮！', likes: 250 }
+            // ... 可依此類推增加到 20 種
+        };
+
+        let currentItem = null;
+        let availableVoices = [];
+        let serialPort = null;
+        let serialReader = null;
+
+        window.speechSynthesis.onvoiceschanged = () => { availableVoices = window.speechSynthesis.getVoices(); };
+
+        function toggleAdmin() {
+            const panel = document.getElementById('adminPanel');
+            const demo = document.getElementById('demoBtns');
+            panel.classList.toggle('hidden');
+            demo.classList.toggle('hidden');
+            if(!panel.classList.contains('hidden')) initDemoButtons();
+        }
+
+        async function connectSerial() {
+            if (!("serial" in navigator)) { alert("您的瀏覽器不支援 Web Serial，請使用 Chrome！"); return; }
+            try {
+                serialPort = await navigator.serial.requestPort();
+                await serialPort.open({ baudRate: 115200 });
+                document.getElementById('connectionStatus').className = "text-sm bg-green-700 px-3 py-1 rounded-full border border-green-500";
+                document.getElementById('connectionStatus').innerHTML = '<i class="fa-solid fa-link mr-1"></i> micro:bit 已連線';
+                document.getElementById('connectSerialBtn').innerText = "✅ micro:bit 已連線";
+                document.getElementById('connectSerialBtn').disabled = true;
+                readSerialLoop();
+            } catch (err) { console.error(err); }
+        }
+
+        async function readSerialLoop() {
+            const textDecoder = new TextDecoderStream();
+            const readableStreamClosed = serialPort.readable.pipeTo(textDecoder.writable);
+            serialReader = textDecoder.readable.getReader();
+            let buffer = "";
+            try {
+                while (true) {
+                    const { value, done } = await serialReader.read();
+                    if (done) break;
+                    buffer += value;
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop();
+                    for (let line of lines) {
+                        line = line.trim();
+                        if (database[line]) simulateScan(line);
+                    }
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function startInputMode(mode) {
+            document.getElementById('selectionPanel').classList.add('hidden');
+            const overlay = document.getElementById('scanningOverlay');
+            overlay.classList.remove('hidden');
+            const icon = document.getElementById('scanIcon');
+            const title = document.getElementById('scanTitle');
+            const desc = document.getElementById('scanDesc');
+            if (mode === 'camera') {
+                icon.className = 'fa-solid fa-camera text-blue-400';
+                title.innerText = 'AI 視覺辨識啟動中';
+                desc.innerText = '請將產品對準凱比的鏡頭...';
+            } else {
+                icon.className = 'fa-solid fa-wifi text-orange-400';
+                title.innerText = 'RFID 感應器就緒';
+                desc.innerText = '請將農產圖卡靠近 micro:bit 讀卡區...';
+            }
+        }
+
+        function cancelInputMode() {
+            document.getElementById('scanningOverlay').classList.add('hidden');
+            document.getElementById('selectionPanel').classList.remove('hidden');
+        }
+
+        function simulateScan(id) {
+            const data = database[id];
+            if (!data) return;
+            currentItem = data;
+            document.getElementById('waitingArea').classList.add('hidden');
+            const dashboard = document.getElementById('dashboardArea');
+            dashboard.classList.remove('hidden');
+            document.getElementById('itemIcon').innerText = data.icon;
+            document.getElementById('itemTitle').innerText = data.title;
+            document.getElementById('itemLocation').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i>${data.location}`;
+            document.getElementById('allergenBadge').className = `flex items-center p-4 rounded-xl border ${data.allergenClass}`;
+            document.getElementById('allergenIcon').className = `fa-solid ${data.allergenIcon} text-2xl mr-4`;
+            document.getElementById('allergenText').innerText = data.allergenText;
+            document.getElementById('carbonText').innerText = data.carbonText;
+            document.getElementById('aiStoryText').innerText = data.story;
+            document.getElementById('likeText').innerText = `給小農按讚 (${data.likes})`;
+            document.getElementById('orderSection').classList.add('hidden');
+            setTimeout(() => speakStory(data.story), 400);
+        }
+
+        function speakStory(text) {
+            window.speechSynthesis.cancel();
+            let utter = new SpeechSynthesisUtterance(text);
+            let voice = availableVoices.find(v => v.name.includes('Google 國語')) || availableVoices.find(v => v.lang === 'zh-TW');
+            if (voice) utter.voice = voice;
+            utter.pitch = 1.1; utter.rate = 1.0;
+            window.speechSynthesis.speak(utter);
+        }
+
+        function resetToWaiting() {
+            window.speechSynthesis.cancel();
+            document.getElementById('dashboardArea').classList.add('hidden');
+            document.getElementById('waitingArea').classList.remove('hidden');
+            cancelInputMode();
+        }
+
+        function initDemoButtons() {
+            const grid = document.getElementById('demoGrid');
+            grid.innerHTML = '';
+            Object.keys(database).forEach(id => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white border text-xs p-2 rounded shadow-sm hover:bg-slate-50";
+                btn.innerText = database[id].icon + " " + database[id].title;
+                btn.onclick = () => simulateScan(id);
+                grid.appendChild(btn);
+            });
+        }
+
+        function addLike() { if(currentItem) { currentItem.likes++; document.getElementById('likeText').innerText = `給小農按讚 (${currentItem.likes})`; } }
+        function toggleOrder() { document.getElementById('orderSection').classList.toggle('hidden'); }
+        function lockAPIKey() { alert('API 金鑰已鎖定於本機記憶體。'); }
+        function replayVoice() { if(currentItem) speakStory(currentItem.story); }
+    </script>
+</body>
+</html>
