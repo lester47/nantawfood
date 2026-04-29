@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>邊跑邊逛・吃遍南投｜最終競賽版</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f7f1df;
+      --ink:#263527;
+      --muted:#6b7a65;
+      --paper:#fffdf4;
+      --line:#e6ddc6;
+      --red:#ef4444;
+      --red2:#fca5a5;
+      --green:#22c55e;
+      --green2:#86efac;
+      --gold:#f59e0b;
+      --brown:#8b5e34;
+      --lake:#3db9d6;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(255,230,150,.7), transparent 35%),
+        linear-gradient(135deg,#f8f1dc,#eff7e5 55%,#eaf6ff);
+      color:var(--ink);
+      min-height:100vh;
+    }
+
+    .topbar{
+      position:sticky; top:0; z-index:20;
+      background:rgba(38,53,39,.92);
+      color:white;
+      backdrop-filter: blur(12px);
+      border-bottom:1px solid rgba(255,255,255,.16);
+      box-shadow:0 10px 30px rgba(0,0,0,.16);
+    }
+    .topbar-inner{
+      max-width:1280px; margin:auto; padding:16px 24px;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+    }
+    .brand{display:flex; align-items:center; gap:14px}
+    .brand-icon{
+      width:48px; height:48px; border-radius:18px;
+      display:grid; place-items:center;
+      background:linear-gradient(135deg,#f59e0b,#22c55e);
+      box-shadow:0 10px 20px rgba(0,0,0,.25);
+      font-size:25px;
+    }
+    .brand h1{font-size:24px; line-height:1.05; margin:0; font-weight:1000; letter-spacing:-.04em}
+    .brand small{display:block; color:#d8f3dc; font-weight:800; letter-spacing:.16em; margin-top:4px; font-size:11px}
+
+    .mode-pill{
+      display:flex; align-items:center; gap:10px;
+      padding:10px 14px; border-radius:999px;
+      background:rgba(255,255,255,.12);
+      font-size:13px; font-weight:900;
+    }
+
+    .app{
+      max-width:1280px;
+      margin:0 auto;
+      padding:28px 24px 56px;
+      display:grid;
+      grid-template-columns:minmax(0,1.35fr) minmax(340px,.65fr);
+      gap:24px;
+    }
+
+    .card{
+      background:rgba(255,253,244,.92);
+      border:1px solid rgba(230,221,198,.9);
+      border-radius:34px;
+      box-shadow:0 20px 45px rgba(75,59,29,.15);
+      overflow:hidden;
+    }
+
+    .map-card{padding:18px}
+    .map-head{
+      display:flex; justify-content:space-between; align-items:flex-start; gap:14px;
+      padding:4px 6px 16px;
+    }
+    .map-title h2{
+      margin:0; font-size:30px; font-weight:1000; letter-spacing:-.04em; color:#315a24;
+    }
+    .map-title p{margin:6px 0 0; color:var(--muted); font-size:13px; font-weight:800}
+
+    .game-actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+    button{
+      border:none; cursor:pointer; font-family:inherit; transition:.18s ease;
+      font-weight:1000;
+    }
+    .mode-btn{
+      padding:11px 16px; border-radius:18px;
+      background:#fff7df; color:#7c4a00; border:2px solid #f4d481;
+    }
+    .mode-btn:hover{transform:translateY(-1px); box-shadow:0 8px 18px rgba(0,0,0,.12)}
+    .mode-btn.active{background:#f59e0b; color:white; border-color:#f59e0b}
+
+    .map-wrap{
+      position:relative;
+      min-height:680px;
+      border-radius:28px;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 50% 36%, rgba(255,255,255,.96), rgba(255,253,244,.72) 42%, rgba(232,246,222,.82)),
+        linear-gradient(180deg,#fef7dd,#ecf8e8);
+      border:2px solid #e2d8be;
+    }
+
+    svg#map{
+      width:100%;
+      height:680px;
+      display:block;
+      cursor:default;
+    }
+
+    .map-bg-title{
+      position:absolute; left:24px; bottom:18px;
+      display:flex; align-items:center; gap:12px;
+      background:rgba(255,255,255,.72);
+      border:1px solid rgba(230,221,198,.9);
+      padding:12px 16px;
+      border-radius:22px;
+      backdrop-filter:blur(8px);
+      pointer-events:none;
+      box-shadow:0 12px 24px rgba(0,0,0,.08);
+    }
+    .map-bg-title b{font-size:18px}
+    .map-bg-title span{font-size:12px; color:#6b7a65; font-weight:900}
+
+    .loader{
+      position:absolute; inset:0; display:grid; place-items:center;
+      background:rgba(255,253,244,.82);
+      z-index:5;
+    }
+    .loader-box{
+      text-align:center; padding:24px 28px; border-radius:28px; background:white;
+      box-shadow:0 16px 36px rgba(0,0,0,.12); font-weight:1000; color:#315a24;
+    }
+
+    .town{
+      fill:url(#townNeutral);
+      stroke:#fffaf0;
+      stroke-width:1.5;
+      cursor:pointer;
+      transition:filter .18s ease, opacity .18s ease;
+      filter: drop-shadow(3px 5px 4px rgba(70,55,30,.22));
+    }
+    .town:hover{
+      filter: drop-shadow(4px 8px 6px rgba(70,55,30,.28)) brightness(1.06);
+      stroke:#f59e0b;
+      stroke-width:2.5;
+    }
+    .town.red{fill:url(#redLand)}
+    .town.green{fill:url(#greenLand)}
+    .town.locked{cursor:not-allowed}
+    .town.selected{stroke:#263527; stroke-width:3.5}
+
+    .town-label{
+      pointer-events:none;
+      text-anchor:middle;
+      dominant-baseline:middle;
+      paint-order:stroke;
+      stroke:white;
+      stroke-width:5;
+      stroke-linejoin:round;
+      fill:#263527;
+      font-weight:1000;
+      font-size:14px;
+      letter-spacing:-.04em;
+    }
+    .town-code{
+      pointer-events:none;
+      text-anchor:middle;
+      dominant-baseline:middle;
+      paint-order:stroke;
+      stroke:white;
+      stroke-width:4;
+      fill:#6b7a65;
+      font-weight:900;
+      font-size:10px;
+    }
+
+    .lake{
+      fill:url(#lakeGrad);
+      stroke:#fff;
+      stroke-width:2;
+      filter:drop-shadow(0 4px 5px rgba(0,0,0,.18));
+      pointer-events:none;
+    }
+    .lake-label{
+      pointer-events:none; fill:#075985; font-size:12px; font-weight:1000;
+      text-anchor:middle; paint-order:stroke; stroke:white; stroke-width:4;
+    }
+
+    .side{
+      display:flex; flex-direction:column; gap:18px;
+    }
+    .panel{padding:22px}
+    .panel h2{margin:0 0 14px; font-size:26px; font-weight:1000; letter-spacing:-.04em}
+
+    .scores{
+      display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;
+    }
+    .score-box{
+      color:white; padding:18px; border-radius:24px; text-align:center;
+      box-shadow:0 14px 24px rgba(0,0,0,.13);
+    }
+    .score-box.red{background:linear-gradient(135deg,#ef4444,#f87171)}
+    .score-box.green{background:linear-gradient(135deg,#16a34a,#4ade80)}
+    .score-box small{display:block; opacity:.82; font-weight:900; font-size:12px; letter-spacing:.12em}
+    .score-box strong{font-size:38px; line-height:1}
+
+    .progress-card{
+      padding:18px; border-radius:24px; background:#f5f0df; border:1px solid #e6ddc6;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      margin-bottom:16px;
+    }
+    .progress-card b{font-size:18px}
+    .progress-card span{font-size:30px; font-weight:1000; color:#d97706}
+
+    .team-select{
+      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+    }
+    .team-btn{
+      padding:16px; border-radius:24px; color:white;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      box-shadow:0 12px 20px rgba(0,0,0,.12);
+      font-size:18px;
+    }
+    .team-btn.red{background:#ef4444}
+    .team-btn.green{background:#16a34a}
+    .team-btn.active{
+      outline:5px solid #facc15;
+      transform:scale(1.03);
+    }
+
+    .runner-card{padding:20px}
+    .runner-card.red{border-bottom:10px solid var(--red)}
+    .runner-card.green{border-bottom:10px solid var(--green)}
+    .runner-title{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;
+    }
+    .runner-title h3{margin:0; font-size:24px; font-weight:1000}
+    .runner-title .avatar{font-size:42px}
+    .bar-label{display:flex; justify-content:space-between; color:#6b7a65; font-size:12px; font-weight:900; margin-bottom:8px}
+    .bar{
+      height:14px; border-radius:999px; background:#e9edf0; overflow:hidden;
+      box-shadow:inset 0 1px 3px rgba(0,0,0,.12);
+    }
+    .bar > i{display:block; height:100%; width:0%; border-radius:999px; transition:.2s ease}
+    .red .bar > i{background:linear-gradient(90deg,#ef4444,#fca5a5)}
+    .green .bar > i{background:linear-gradient(90deg,#16a34a,#86efac)}
+    .run-btn{
+      width:100%; margin-top:16px; padding:16px; border-radius:22px;
+      color:white; font-size:20px; box-shadow:0 14px 24px rgba(0,0,0,.16);
+    }
+    .run-btn.red{background:#ef4444}
+    .run-btn.green{background:#16a34a}
+    .run-btn:disabled{background:#cbd5e1; color:#64748b; cursor:not-allowed; box-shadow:none}
+
+    @keyframes bounce-run{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+    .running{animation:bounce-run .32s infinite}
+
+    .info{
+      padding:22px;
+    }
+    .food-hero{
+      display:flex; gap:16px; align-items:center; margin-bottom:16px;
+    }
+    .food-icon{
+      width:82px; height:82px; border-radius:28px; display:grid; place-items:center;
+      background:linear-gradient(135deg,#fff8d7,#eefbdc);
+      border:1px solid #eadfbe;
+      font-size:48px;
+      box-shadow:inset 0 2px 9px rgba(255,255,255,.9), 0 12px 20px rgba(0,0,0,.08);
+    }
+    .food-hero h2{margin:0; font-size:26px}
+    .food-hero p{margin:4px 0 0; color:#6b7a65; font-weight:900}
+
+    .info-grid{display:grid; grid-template-columns:1fr; gap:10px}
+    .mini{
+      padding:14px 16px; border-radius:20px; background:#f6f4e9;
+      border:1px solid #e6ddc6;
+    }
+    .mini b{display:flex; align-items:center; gap:8px; color:#315a24; margin-bottom:5px}
+    .mini div{line-height:1.65; color:#384a35; font-weight:700}
+
+    .story{
+      margin-top:12px; padding:18px; border-radius:24px;
+      background:#263527; color:white; line-height:1.75;
+      box-shadow:0 14px 26px rgba(0,0,0,.16);
+    }
+    .story b{color:#facc15}
+    .hint{
+      margin-top:12px; color:#6b7a65; font-size:13px; line-height:1.7; font-weight:800;
+    }
+
+    .modal{
+      position:fixed; inset:0; display:none; place-items:center; z-index:60;
+      background:rgba(20,26,20,.76); backdrop-filter:blur(8px);
+      padding:24px;
+    }
+    .modal.show{display:grid}
+    .modal-box{
+      width:min(620px,100%); text-align:center; border-radius:40px; background:#fffdf4;
+      padding:44px 32px; box-shadow:0 30px 70px rgba(0,0,0,.3);
+      border:4px solid #facc15;
+    }
+    .modal-box .trophy{font-size:88px}
+    .modal-box h2{font-size:42px; margin:12px 0; font-weight:1000}
+    .modal-box p{font-size:19px; color:#4b5a47; line-height:1.7; font-weight:800}
+    .modal-box button{padding:16px 34px; border-radius:24px; background:#22c55e; color:white; font-size:20px; margin-top:16px}
+
+    @media (max-width:980px){
+      .app{grid-template-columns:1fr}
+      .map-wrap{min-height:560px}
+      svg#map{height:560px}
+      .topbar-inner{align-items:flex-start; flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-icon">🏃‍♂️</div>
+        <div>
+          <h1>邊跑邊逛・吃遍南投</h1>
+          <small>AI 食農大使｜南投食農領地戰</small>
+        </div>
+      </div>
+      <div class="mode-pill">
+        <i class="fa-solid fa-map-location-dot"></i>
+        <span>紅隊 × 綠隊｜跑步補給｜鄉鎮攻佔</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="app">
+    <section class="card map-card">
+      <div class="map-head">
+        <div class="map-title">
+          <h2>南投 13 鄉鎮食農地圖</h2>
+          <p>跑滿 10 步後，點選一個鄉鎮取得在地農產補給。</p>
+        </div>
+        <div class="game-actions">
+          <button id="halfMode" class="mode-btn active">半馬 7 點</button>
+          <button id="fullMode" class="mode-btn">全馬 13 點</button>
+          <button id="resetBtn" class="mode-btn">重新開始</button>
+        </div>
+      </div>
+
+      <div class="map-wrap">
+        <div id="loader" class="loader">
+          <div class="loader-box">
+            <div style="font-size:42px;margin-bottom:8px;">🗺️</div>
+            正在載入南投真實地圖資料...
+          </div>
+        </div>
+        <svg id="map" aria-label="南投縣鄉鎮地圖"></svg>
+        <div class="map-bg-title">
+          <div style="font-size:30px">🌾</div>
+          <div>
+            <b>南投食農領地戰</b><br>
+            <span>點亮土地・認識家鄉・支持在地</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="card panel">
+        <h2>任務戰況</h2>
+        <div class="scores">
+          <div class="score-box red"><small>紅隊</small><strong id="redScore">0</strong></div>
+          <div class="score-box green"><small>綠隊</small><strong id="greenScore">0</strong></div>
+        </div>
+        <div class="progress-card">
+          <b>總達成度</b>
+          <span><em id="totalScore" style="font-style:normal">0</em> / <em id="goalScore" style="font-style:normal">7</em></span>
+        </div>
+        <div class="team-select">
+          <button id="redTeamBtn" class="team-btn red active">🔴 紅隊</button>
+          <button id="greenTeamBtn" class="team-btn green">🟢 綠隊</button>
+        </div>
+      </section>
+
+      <section class="card runner-card red">
+        <div class="runner-title">
+          <h3 style="color:#dc2626">TEAM RED</h3>
+          <div id="redAvatar" class="avatar">🏃‍♂️</div>
+        </div>
+        <div class="bar-label"><span>跑步進度</span><span><b id="redSteps">0</b> / 10</span></div>
+        <div class="bar"><i id="redBar"></i></div>
+        <button id="redRunBtn" class="run-btn red">紅隊跑一步</button>
+      </section>
+
+      <section class="card runner-card green">
+        <div class="runner-title">
+          <h3 style="color:#16a34a">TEAM GREEN</h3>
+          <div id="greenAvatar" class="avatar">🏃‍♀️</div>
+        </div>
+        <div class="bar-label"><span>跑步進度</span><span><b id="greenSteps">0</b> / 10</span></div>
+        <div class="bar"><i id="greenBar"></i></div>
+        <button id="greenRunBtn" class="run-btn green">綠隊跑一步</button>
+      </section>
+
+      <section class="card info">
+        <div class="food-hero">
+          <div id="foodIcon" class="food-icon">🧭</div>
+          <div>
+            <h2 id="townName">尚未選擇</h2>
+            <p id="productName">請先讓任一隊跑滿 10 步</p>
+          </div>
+        </div>
+        <div class="info-grid">
+          <div class="mini">
+            <b><i class="fa-solid fa-star"></i> 代表特色</b>
+            <div id="featureText">選擇鄉鎮後，這裡會顯示代表農產品與食農特色。</div>
+          </div>
+          <div class="mini">
+            <b><i class="fa-solid fa-leaf"></i> 永續與低碳</b>
+            <div id="carbonText">鼓勵吃在地、食當季，縮短食物里程。</div>
+          </div>
+          <div class="mini">
+            <b><i class="fa-solid fa-shield-halved"></i> 食安提醒</b>
+            <div id="allergenText">依不同農產顯示食用提醒。</div>
+          </div>
+        </div>
+        <div class="story">
+          <b>凱比食農導覽：</b>
+          <span id="storyText">準備開始！讓學生在跑步、地圖與在地農產之間，建立一場有身體感的食農學習。</span>
+        </div>
+        <div class="hint" id="hintText">
+          提醒：目前選擇隊伍為紅隊。跑滿 10 步後，地圖會進入可攻佔狀態。
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="winModal" class="modal">
+    <div class="modal-box">
+      <div class="trophy">🏆</div>
+      <h2 id="winTitle">挑戰完成</h2>
+      <p id="winText"></p>
+      <button onclick="location.reload()">再玩一次</button>
+    </div>
+  </div>
+
+  <script>
+    const geoJsonUrl = "https://raw.githubusercontent.com/titaneric/Taiwan-GeoJSON/master/%E5%8D%97%E6%8A%95%E7%B8%A3%E9%84%89%E9%8E%AE.json";
+
+    const districtCodes = {
+      "南投市": { code: "3801", short: "南投" },
+      "埔里鎮": { code: "3802", short: "埔里" },
+      "草屯鎮": { code: "3803", short: "草屯" },
+      "竹山鎮": { code: "3804", short: "竹山" },
+      "集集鎮": { code: "3805", short: "集集" },
+      "名間鄉": { code: "3806", short: "名間" },
+      "鹿谷鄉": { code: "3807", short: "鹿谷" },
+      "中寮鄉": { code: "3808", short: "中寮" },
+      "魚池鄉": { code: "3809", short: "魚池" },
+      "國姓鄉": { code: "3810", short: "國姓" },
+      "水里鄉": { code: "3811", short: "水里" },
+      "信義鄉": { code: "3812", short: "信義" },
+      "仁愛鄉": { code: "3813", short: "仁愛" }
+    };
+
+    const foodData = {
+      "仁愛鄉": { icon:"🍄", product:"高山香菇", feature:"森林環境、肥厚菌傘、深山接菌栽培。", carbon:"高山在地鮮採，減少長途運輸，支持山村友善農業。", allergen:"天然食材，菇類過敏者仍需留意。", story:"仁愛鄉的高山香菇，就像森林送給我們的禮物。孩子透過地圖認識產地，也能理解食物背後的山林環境。" },
+      "國姓鄉": { icon:"☕", product:"國姓咖啡", feature:"阿拉比卡豆、柑橘香氣、高海拔精品咖啡。", carbon:"支持台灣在地咖啡，減少進口咖啡豆的運輸里程。", allergen:"含咖啡因，兒童與心悸者需酌量。", story:"國姓咖啡把山城的氣候變成香氣，讓學生知道農產不只是食物，也是一種地方品牌。" },
+      "草屯鎮": { icon:"🍡", product:"手工麻糬", feature:"糯米香 Q、內餡紮實、在地傳承。", carbon:"使用在地米食與地方製作，保留傳統產業價值。", allergen:"常見花生、芝麻、糯米，過敏者需確認成分。", story:"草屯麻糬最適合介紹『加工農產』，從糯米到點心，讓孩子看見農業與飲食文化的連結。" },
+      "南投市": { icon:"🍜", product:"南投意麵", feature:"陽光曝曬、麵體彈牙、傳統工法與古早味。", carbon:"地方手作食品縮短供應鏈，強化在地消費。", allergen:"含小麥麩質，麩質敏感者需注意。", story:"南投意麵讓學生知道，農產也能透過加工與手藝變成地方名片。" },
+      "中寮鄉": { icon:"🍯", product:"龍眼蜂蜜", feature:"純淨蜜源、琥珀色澤、花香濃郁。", carbon:"友善蜜源與在地蜂農，連結生態保育與農業生產。", allergen:"一歲以下嬰幼兒不建議食用蜂蜜。", story:"中寮蜂蜜能帶出蜜蜂授粉、生態多樣性與農業共好的概念，非常適合食農教育。" },
+      "埔里鎮": { icon:"🥬", product:"茭白筍", feature:"美人腿、湧泉灌溉、潔白脆嫩。", carbon:"產地直送新鮮蔬菜，降低冷鏈與長距離運輸負擔。", allergen:"高纖蔬菜，一般安全，腸胃敏感者可適量。", story:"埔里茭白筍讓孩子看見『水』與農業的關係，乾淨湧泉就是美人腿好吃的秘密。" },
+      "魚池鄉": { icon:"🫖", product:"日月潭紅茶", feature:"紅玉紅茶、薄荷香、肉桂香、紅寶石茶湯。", carbon:"支持在地茶產業與茶園永續管理。", allergen:"含咖啡因，兒童飲用需酌量。", story:"魚池紅茶是南投最有國際感的農產之一，能讓學生從一杯茶看見世界市場。" },
+      "名間鄉": { icon:"🍍", product:"名間鳳梨", feature:"紅土高原、酸甜比例佳、果肉細緻。", carbon:"食當季水果，減少非產季高耗能保存與運輸。", allergen:"鳳梨酵素可能刺激口腔，敏感者需注意。", story:"名間鳳梨適合說明土壤如何影響風味，紅土高原就是南投農產的自然教室。" },
+      "集集鎮": { icon:"🍌", product:"集集山蕉", feature:"口感紮實 Q 彈、高地生長、地方歷史故事。", carbon:"在地香蕉可作為運動補給，減少進口水果依賴。", allergen:"一般安全，香蕉過敏者需留意。", story:"集集山蕉能把運動補給與食農學習結合，跑步後吃香蕉，最有身體感。" },
+      "水里鄉": { icon:"🧉", product:"水里脆梅", feature:"手工古法、酸甜爽口、青梅醃漬。", carbon:"地方加工保存技術，延長農產生命週期，減少浪費。", allergen:"醃漬食品含糖與鹽分，需適量食用。", story:"水里脆梅能談保存技術，讓孩子知道以前的人如何用智慧保存季節的味道。" },
+      "鹿谷鄉": { icon:"🍵", product:"凍頂烏龍", feature:"雲霧滋養、炭火慢焙、金黃茶湯。", carbon:"支持在地茶農與山坡地友善管理。", allergen:"含咖啡因，兒童需酌量。", story:"鹿谷凍頂烏龍是南投的茶文化代表，從茶葉可延伸到地形、氣候、技藝與品牌。" },
+      "竹山鎮": { icon:"🍠", product:"紅土地瓜", feature:"紅色黏土栽培、質地綿密極甜、富含膳食纖維。", carbon:"在地根莖作物，保存容易、運輸負擔較低。", allergen:"優質澱粉來源，一般安全，血糖控制者需酌量。", story:"竹山紅土地瓜最能說明『土地給食物的個性』，同一種作物，因土壤不同而有不同風味。" },
+      "信義鄉": { icon:"🍇", product:"巨峰葡萄", feature:"黑寶石、高海拔冷涼孕育、果粉濃厚。", carbon:"支持高山水果產地直送，降低中間物流。", allergen:"天然果實，一般安全，糖分攝取需適量。", story:"信義葡萄讓學生看見高海拔氣候如何成就水果品質，也能連結原鄉農業與觀光。" }
+    };
+
+    const state = {
+      currentTeam: "red",
+      occupied: {},
+      selectedTown: null,
+      redSteps: 0,
+      greenSteps: 0,
+      goal: 7,
+      activeTeam: null,
+      geoReady: false
+    };
+
+    const $ = id => document.getElementById(id);
+    const svg = d3.select("#map");
+    const width = 760;
+    const height = 680;
+    svg.attr("viewBox", `0 0 ${width} ${height}`);
+
+    function setupDefs(){
+      const defs = svg.append("defs");
+
+      const neutral = defs.append("linearGradient").attr("id","townNeutral").attr("x1","0").attr("y1","0").attr("x2","1").attr("y2","1");
+      neutral.append("stop").attr("offset","0%").attr("stop-color","#e6dcc2");
+      neutral.append("stop").attr("offset","100%").attr("stop-color","#b8c7a5");
+
+      const red = defs.append("linearGradient").attr("id","redLand").attr("x1","0").attr("y1","0").attr("x2","1").attr("y2","1");
+      red.append("stop").attr("offset","0%").attr("stop-color","#fecaca");
+      red.append("stop").attr("offset","100%").attr("stop-color","#ef4444");
+
+      const green = defs.append("linearGradient").attr("id","greenLand").attr("x1","0").attr("y1","0").attr("x2","1").attr("y2","1");
+      green.append("stop").attr("offset","0%").attr("stop-color","#bbf7d0");
+      green.append("stop").attr("offset","100%").attr("stop-color","#16a34a");
+
+      const lake = defs.append("radialGradient").attr("id","lakeGrad").attr("cx","45%").attr("cy","38%").attr("r","70%");
+      lake.append("stop").attr("offset","0%").attr("stop-color","#a7f3ff");
+      lake.append("stop").attr("offset","100%").attr("stop-color","#0ea5e9");
+    }
+
+    setupDefs();
+
+    function normalizeTownName(name){
+      if(!name) return "";
+      const n = String(name).trim();
+      if(foodData[n]) return n;
+      const short = n.replace("南投縣","").replace("台灣省","").trim();
+      if(foodData[short]) return short;
+
+      const map = {
+        "南投":"南投市","埔里":"埔里鎮","草屯":"草屯鎮","竹山":"竹山鎮","集集":"集集鎮",
+        "名間":"名間鄉","鹿谷":"鹿谷鄉","中寮":"中寮鄉","魚池":"魚池鄉","國姓":"國姓鄉",
+        "水里":"水里鄉","信義":"信義鄉","仁愛":"仁愛鄉"
+      };
+      const bare = short.replace(/[市鎮鄉區]/g,"");
+      return map[bare] || short;
+    }
+
+    function setMode(goal){
+      state.goal = goal;
+      $("goalScore").textContent = goal;
+      $("halfMode").classList.toggle("active", goal === 7);
+      $("fullMode").classList.toggle("active", goal === 13);
+      updateHint();
+    }
+
+    function setTeam(team){
+      state.currentTeam = team;
+      $("redTeamBtn").classList.toggle("active", team === "red");
+      $("greenTeamBtn").classList.toggle("active", team === "green");
+      updateHint();
+    }
+
+    function addStep(team){
+      if(state.activeTeam) return;
+      if(team === "red"){
+        state.redSteps = Math.min(10, state.redSteps + 1);
+        if(state.redSteps >= 10) activateMap("red");
+      }else{
+        state.greenSteps = Math.min(10, state.greenSteps + 1);
+        if(state.greenSteps >= 10) activateMap("green");
+      }
+      updateUI();
+    }
+
+    function activateMap(team){
+      if(state.activeTeam) return;
+      state.activeTeam = team;
+      setTeam(team);
+      updateHint();
+      $("storyText").textContent = `${team === "red" ? "紅隊" : "綠隊"}已完成 10 步！請點選地圖上一個尚未佔領的鄉鎮，取得在地農產補給。`;
+      d3.selectAll(".town").classed("locked", d => {
+        const town = normalizeTownName(d.properties.TOWNNAME || d.properties.name || d.properties.Town || d.properties.town);
+        return !!state.occupied[town];
+      });
+    }
+
+    function occupyTown(event, d){
+      const town = normalizeTownName(d.properties.TOWNNAME || d.properties.name || d.properties.Town || d.properties.town);
+      if(!town || !foodData[town]) return;
+      if(state.occupied[town]) {
+        showTownInfo(town);
+        return;
+      }
+      if(!state.activeTeam){
+        $("storyText").textContent = "請先讓紅隊或綠隊跑滿 10 步，才能攻佔鄉鎮。";
+        showTownInfo(town);
+        return;
+      }
+
+      const team = state.activeTeam;
+      state.occupied[town] = team;
+      state.selectedTown = town;
+
+      d3.selectAll(".town").classed("selected", false);
+      d3.select(event.currentTarget)
+        .classed("red", team === "red")
+        .classed("green", team === "green")
+        .classed("selected", true)
+        .classed("locked", true);
+
+      if(team === "red") state.redSteps = 0;
+      if(team === "green") state.greenSteps = 0;
+      state.activeTeam = null;
+
+      showTownInfo(town);
+      updateUI();
+      checkWinner();
+    }
+
+    function showTownInfo(town){
+      const data = foodData[town];
+      const code = districtCodes[town]?.code || "";
+      $("foodIcon").textContent = data.icon;
+      $("townName").textContent = `${town} ${code ? "｜" + code : ""}`;
+      $("productName").textContent = data.product;
+      $("featureText").textContent = data.feature;
+      $("carbonText").textContent = data.carbon;
+      $("allergenText").textContent = data.allergen;
+      $("storyText").textContent = data.story;
+    }
+
+    function updateScore(){
+      let red = 0, green = 0;
+      Object.values(state.occupied).forEach(team => {
+        if(team === "red") red++;
+        if(team === "green") green++;
+      });
+      $("redScore").textContent = red;
+      $("greenScore").textContent = green;
+      $("totalScore").textContent = red + green;
+      return { red, green, total:red+green };
+    }
+
+    function updateUI(){
+      $("redSteps").textContent = state.redSteps;
+      $("greenSteps").textContent = state.greenSteps;
+      $("redBar").style.width = `${state.redSteps * 10}%`;
+      $("greenBar").style.width = `${state.greenSteps * 10}%`;
+      $("redAvatar").classList.toggle("running", state.redSteps > 0 && !state.activeTeam);
+      $("greenAvatar").classList.toggle("running", state.greenSteps > 0 && !state.activeTeam);
+      $("redRunBtn").disabled = !!state.activeTeam && state.activeTeam !== "red";
+      $("greenRunBtn").disabled = !!state.activeTeam && state.activeTeam !== "green";
+      updateScore();
+      updateHint();
+    }
+
+    function updateHint(){
+      const teamText = state.currentTeam === "red" ? "紅隊" : "綠隊";
+      if(state.activeTeam){
+        $("hintText").textContent = `${state.activeTeam === "red" ? "紅隊" : "綠隊"}已取得攻佔資格，請點選尚未佔領的鄉鎮。`;
+      }else{
+        $("hintText").textContent = `目前選擇隊伍為${teamText}。跑滿 10 步後，地圖會進入可攻佔狀態。`;
+      }
+    }
+
+    function checkWinner(){
+      const s = updateScore();
+      if(s.total < state.goal) return;
+
+      let title = "";
+      let text = `紅隊佔領 ${s.red} 個鄉鎮，綠隊佔領 ${s.green} 個鄉鎮。`;
+
+      if(s.red > s.green){
+        title = "紅隊獲勝！";
+        text += "紅隊完成更多在地食農探索任務。";
+      }else if(s.green > s.red){
+        title = "綠隊獲勝！";
+        text += "綠隊完成更多在地食農探索任務。";
+      }else{
+        title = "雙方平手！";
+        text += "兩隊都是最棒的南投食農小大使。";
+      }
+
+      $("winTitle").textContent = title;
+      $("winText").textContent = text;
+      $("winModal").classList.add("show");
+    }
+
+    function drawMap(geoData){
+      state.geoReady = true;
+      $("loader").style.display = "none";
+
+      const projection = d3.geoMercator().fitExtent([[34, 18], [width - 34, height - 18]], geoData);
+      const path = d3.geoPath().projection(projection);
+
+      const g = svg.append("g").attr("class","town-group");
+
+      g.selectAll("path")
+        .data(geoData.features)
+        .enter()
+        .append("path")
+        .attr("class","town")
+        .attr("d", path)
+        .attr("data-town", d => normalizeTownName(d.properties.TOWNNAME || d.properties.name || d.properties.Town || d.properties.town))
+        .on("click", occupyTown);
+
+      // 日月潭裝飾位置：使用魚池鄉中心附近視覺定位
+      const fishFeature = geoData.features.find(f => normalizeTownName(f.properties.TOWNNAME || f.properties.name || f.properties.Town || f.properties.town) === "魚池鄉");
+      if(fishFeature){
+        const c = path.centroid(fishFeature);
+        svg.append("ellipse")
+          .attr("class","lake")
+          .attr("cx", c[0] + 4)
+          .attr("cy", c[1] + 12)
+          .attr("rx", 34)
+          .attr("ry", 18)
+          .attr("transform", `rotate(-18 ${c[0]+4} ${c[1]+12})`);
+        svg.append("text")
+          .attr("class","lake-label")
+          .attr("x", c[0] + 4)
+          .attr("y", c[1] + 14)
+          .text("日月潭");
+      }
+
+      g.selectAll("text.town-label")
+        .data(geoData.features)
+        .enter()
+        .append("text")
+        .attr("class","town-label")
+        .attr("x", d => path.centroid(d)[0])
+        .attr("y", d => path.centroid(d)[1] - 7)
+        .text(d => districtCodes[normalizeTownName(d.properties.TOWNNAME || d.properties.name || d.properties.Town || d.properties.town)]?.short || normalizeTownName(d.properties.TOWNNAME || d.properties.name || d.properties.Town || d.properties.town).replace(/[市鎮鄉]/g,""));
+
+      g.selectAll("text.town-code")
+        .data(geoData.features)
+        .enter()
+        .append("text")
+        .attr("class","town-code")
+        .attr("x", d => path.centroid(d)[0])
+        .attr("y", d => path.centroid(d)[1] + 10)
+        .text(d => districtCodes[normalizeTownName(d.properties.TOWNNAME || d.properties.name || d.properties.Town || d.properties.town)]?.code || "");
+    }
+
+    function drawFallbackMap(){
+      $("loader").style.display = "none";
+      $("storyText").textContent = "目前無法載入線上真實地圖，系統已切換為離線展示地圖。建議正式比賽前確認網路連線。";
+
+      const towns = [
+        ["仁愛鄉",470,120,160,90],["信義鄉",470,255,150,150],["埔里鎮",315,150,120,90],
+        ["國姓鄉",215,145,100,85],["魚池鄉",330,270,105,75],["水里鄉",330,370,105,75],
+        ["中寮鄉",205,255,105,95],["集集鎮",215,370,90,70],["鹿谷鄉",240,470,110,85],
+        ["竹山鎮",250,575,115,75],["名間鄉",115,400,100,85],["南投市",95,295,95,80],["草屯鎮",105,190,105,80]
+      ];
+      const g = svg.append("g").attr("class","town-group");
+      towns.forEach(([town,x,y,w,h])=>{
+        const p = g.append("path")
+          .datum({properties:{TOWNNAME:town}})
+          .attr("class","town")
+          .attr("d",`M${x},${y} C${x+w*.25},${y-25} ${x+w*.8},${y-18} ${x+w},${y+h*.25} C${x+w+18},${y+h*.78} ${x+w*.6},${y+h+24} ${x+w*.12},${y+h} C${x-28},${y+h*.7} ${x-22},${y+h*.22} ${x},${y}Z`)
+          .on("click", occupyTown);
+        g.append("text").attr("class","town-label").attr("x",x+w/2).attr("y",y+h/2-7).text(districtCodes[town].short);
+        g.append("text").attr("class","town-code").attr("x",x+w/2).attr("y",y+h/2+10).text(districtCodes[town].code);
+      });
+      svg.append("ellipse").attr("class","lake").attr("cx",382).attr("cy",310).attr("rx",32).attr("ry",18).attr("transform","rotate(-20 382 310)");
+      svg.append("text").attr("class","lake-label").attr("x",382).attr("y",314).text("日月潭");
+    }
+
+    $("redTeamBtn").onclick = () => setTeam("red");
+    $("greenTeamBtn").onclick = () => setTeam("green");
+    $("redRunBtn").onclick = () => addStep("red");
+    $("greenRunBtn").onclick = () => addStep("green");
+    $("halfMode").onclick = () => setMode(7);
+    $("fullMode").onclick = () => setMode(13);
+    $("resetBtn").onclick = () => location.reload();
+
+    updateUI();
+
+    d3.json(geoJsonUrl)
+      .then(drawMap)
+      .catch(drawFallbackMap);
+  </script>
+</body>
+</html>
