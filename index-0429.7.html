@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邊跑邊逛 吃遍南投 - 13鄉鎮食農跑旅</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes bounce-run { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .running { animation: bounce-run 0.3s infinite; }
+        
+        /* 鄉鎮按鈕樣式 */
+        .township-point {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 20;
+            background: white;
+            border: 3px solid #64748b;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transform: translate(-50%, -50%);
+        }
+        
+        .township-point:hover:not(.disabled) {
+            transform: translate(-50%, -50%) scale(1.3);
+            z-index: 50;
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .occupied-red { background: #ef4444 !important; color: white !important; border-color: #fca5a5 !important; }
+        .occupied-green { background: #10b981 !important; color: white !important; border-color: #a7f3d0 !important; }
+        .disabled { opacity: 0.9; cursor: not-allowed; pointer-events: none; }
+        
+        .active-team-card { border-color: #f59e0b !important; ring: 4px; ring-color: #fef3c7; }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans pb-20">
+
+    <header class="bg-slate-900 text-white p-5 shadow-2xl sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-map-location-dot text-2xl text-emerald-400"></i>
+                <h1 class="text-2xl font-black italic tracking-tighter">邊跑邊逛・吃遍南投</h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="flex gap-4">
+                    <div class="flex items-center gap-2 text-xs font-bold"><span class="w-3 h-3 rounded bg-red-500"></span> 紅隊</div>
+                    <div class="flex items-center gap-2 text-xs font-bold"><span class="w-3 h-3 rounded bg-green-500"></span> 綠隊</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-8 space-y-10">
+        
+        <!-- 第一區：地圖顯示 -->
+        <section class="bg-white rounded-[3.5rem] shadow-xl p-8 border border-slate-200 overflow-hidden">
+            <div class="flex flex-col lg:flex-row justify-between items-center gap-10">
+                <!-- 統計看板 -->
+                <div class="lg:w-1/4 w-full grid grid-cols-2 lg:grid-cols-1 gap-4">
+                    <div class="bg-red-50 p-6 rounded-3xl border-2 border-red-100">
+                        <p class="text-xs font-black text-red-400 uppercase mb-1">紅隊補給</p>
+                        <p class="text-4xl font-black text-red-600"><span id="score-red">0</span> <small class="text-sm">種</small></p>
+                    </div>
+                    <div class="bg-green-50 p-6 rounded-3xl border-2 border-green-100">
+                        <p class="text-xs font-black text-green-400 uppercase mb-1">綠隊補給</p>
+                        <p class="text-4xl font-black text-green-600"><span id="score-green">0</span> <small class="text-sm">種</small></p>
+                    </div>
+                    <div class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 col-span-2 lg:col-span-1">
+                        <p class="text-xs font-black text-slate-400 uppercase mb-1">待探索鄉鎮</p>
+                        <p class="text-3xl font-black text-slate-500"><span id="score-remain">13</span> / 13</p>
+                    </div>
+                </div>
+
+                <!-- 實體地圖互動區 -->
+                <div class="lg:w-3/4 w-full bg-slate-50 rounded-[3rem] p-6 relative flex justify-center items-center shadow-inner" style="min-height: 650px;">
+                    <div class="relative inline-block">
+                        <!-- 使用您的南投行政區域圖 -->
+                        <img src="/api/files/image_a841bb.png" alt="南投地圖" id="mapBase" class="max-w-full h-auto rounded-2xl shadow-xl border-4 border-white" style="max-height: 600px;">
+                        
+                        <!-- 互動點位容器 -->
+                        <div id="map-interaction-layer" class="absolute inset-0">
+                            <!-- JS 會在此根據座標生成按鈕 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第二區：路跑對決 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div id="card-red" class="bg-white rounded-[3rem] p-8 shadow-lg border-b-[12px] border-red-500 transition-all border-2 border-transparent">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-3xl font-black text-red-600 italic">TEAM RED</h3>
+                    <div id="avatar-red" class="text-5xl">🏃‍♂️</div>
+                </div>
+                <div class="mb-8">
+                    <div class="h-4 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="bar-red" class="h-full bg-red-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between mt-3">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Energy Progress</span>
+                        <p class="font-black text-slate-800"><span id="steps-red">0</span> / 10 步</p>
+                    </div>
+                </div>
+                <button onclick="addStep('red')" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl shadow-lg active:scale-95 transition-all text-xl">
+                    加油快跑！累積補給
+                </button>
+            </div>
+
+            <div id="card-green" class="bg-white rounded-[3rem] p-8 shadow-lg border-b-[12px] border-green-500 transition-all border-2 border-transparent">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-3xl font-black text-green-600 italic">TEAM GREEN</h3>
+                    <div id="avatar-green" class="text-5xl">🏃‍♀️</div>
+                </div>
+                <div class="mb-8">
+                    <div class="h-4 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="bar-green" class="h-full bg-green-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between mt-3">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Energy Progress</span>
+                        <p class="font-black text-slate-800"><span id="steps-green">0</span> / 10 步</p>
+                    </div>
+                </div>
+                <button onclick="addStep('green')" class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-5 rounded-2xl shadow-lg active:scale-95 transition-all text-xl">
+                    努力奔跑！尋找美味
+                </button>
+            </div>
+        </div>
+
+        <!-- 第三區：凱比智慧導覽看板 -->
+        <section id="infoPanel" class="hidden fade-in">
+            <div class="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-4 border-orange-100 relative">
+                <div class="flex flex-col lg:flex-row gap-12 items-center">
+                    <div class="w-full lg:w-1/3 flex flex-col items-center">
+                        <div class="w-64 h-64 bg-slate-50 rounded-[3rem] flex items-center justify-center text-8xl shadow-inner border-8 border-white mb-6" id="foodImg">❓</div>
+                        <h2 class="text-4xl font-black text-slate-800" id="foodName">美味補給中...</h2>
+                    </div>
+
+                    <div class="w-full lg:w-2/3 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div class="bg-blue-50 p-6 rounded-3xl border-2 border-blue-100">
+                                <div class="flex items-center gap-2 mb-3 text-blue-500"><i class="fa-solid fa-star"></i> <span class="text-xs font-black uppercase tracking-widest">特色簡介</span></div>
+                                <p id="foodFeature" class="text-sm font-bold text-slate-700 leading-relaxed">請在地圖上選擇你喜歡的食材...</p>
+                            </div>
+                            <div class="bg-emerald-50 p-6 rounded-3xl border-2 border-emerald-100">
+                                <div class="flex items-center gap-2 mb-3 text-emerald-500"><i class="fa-solid fa-leaf"></i> <span class="text-xs font-black uppercase tracking-widest">碳排數據</span></div>
+                                <p id="foodCarbon" class="text-sm font-bold text-slate-700 leading-relaxed">-</p>
+                            </div>
+                            <div id="allergenBox" class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100">
+                                <div class="flex items-center gap-2 mb-3 text-slate-400"><i class="fa-solid fa-shield-halved"></i> <span class="text-xs font-black uppercase tracking-widest">安全提示</span></div>
+                                <p id="foodAllergen" class="text-sm font-bold text-slate-700 leading-relaxed">-</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900 text-white p-7 rounded-3xl flex items-start gap-6 shadow-xl border-l-8 border-orange-500">
+                            <div class="text-4xl">🤖</div>
+                            <div>
+                                <p class="text-xs font-bold text-orange-400 mb-1 tracking-widest">南投食農大使・凱比</p>
+                                <p id="foodStory" class="text-lg font-medium leading-relaxed italic">「太棒了！跑完了 10 步！趕快選一個你喜歡的南投美食來補給吧！」</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 獲勝 -->
+    <div id="winModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] hidden items-center justify-center p-6">
+        <div class="bg-white rounded-[4rem] p-16 max-w-xl w-full text-center shadow-2xl">
+            <div class="text-[10rem] mb-10">🏃‍♂️🏆</div>
+            <h2 id="winTitle" class="text-5xl font-black text-slate-800 mb-4">跑旅挑戰成功！</h2>
+            <p id="winStats" class="text-slate-500 text-2xl font-bold mb-10"></p>
+            <button onclick="location.reload()" class="bg-emerald-500 text-white px-16 py-6 rounded-3xl font-black text-2xl shadow-lg hover:scale-110 transition">重新開始</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. 13 鄉鎮資料庫 (座標已根據地圖圖檔修正避免擠在一團) ---
+        const towns = [
+            { name: "草屯", x: 22, y: 15, food: "手工麻糬", icon: "🍡", feature: "糯米香Q，手工揉製內餡紮實。", carbon: "🌱 減碳 90% (在地食材)", allergy: "🔴 含花生、糯米", story: "草屯麻糬超級有名！但是會對花生過敏的小朋友，一定要注意這款補給喔。" },
+            { name: "國姓", x: 45, y: 15, food: "國姓咖啡", icon: "☕", feature: "本土精品豆，帶有柑橘香氣。", carbon: "🌱 減碳 95% (免空運)", allergy: "🟢 咖啡因注意", story: "國姓鄉海拔高、空氣好，種出來的咖啡豆香氣完全不輸給外國喔！" },
+            { name: "仁愛", x: 75, y: 25, food: "高山香菇", icon: "🍄", feature: "森林中成長，肉質肥厚鮮甜。", carbon: "🌱 減碳 88% (低運輸)", allergy: "🟢 天然食材", story: "長在仁愛鄉深山裡的香菇，吸飽了山裡的芬多精，最有營養了！" },
+            { name: "埔里", x: 48, y: 28, food: "茭白筍", icon: "🥬", feature: "美人腿美稱，質地脆嫩如水梨。", carbon: "🌱 湧泉灌溉 (免化學)", allergy: "🟢 高纖安全", story: "埔里的水最乾淨了，種出來的茭白筍不用加鹽巴就非常甜喔！" },
+            { name: "南投", x: 15, y: 35, food: "南投意麵", icon: "🍜", feature: "傳統工法曬製，麵體彈牙有勁。", carbon: "🌱 在地手作", allergy: "🟡 含小麥麩質", story: "跑累了嗎？來一碗暖呼呼的南投意麵，這可是南投市最道地的味道！" },
+            { name: "中寮", x: 32, y: 35, food: "龍眼蜂蜜", icon: "🍯", feature: "純淨山區採集，滴滴芬芳透亮。", carbon: "🌱 友善蜜源", allergy: "🟡 嬰兒忌食", story: "中寮的蜜蜂好勤勞！但要記得一歲以下的小Baby不可以吃蜂蜜喔。" },
+            { name: "魚池", x: 52, y: 48, food: "日月潭紅茶", icon: "🫖", feature: "茶湯鮮紅，帶天然薄荷與肉桂香。", carbon: "🌱 契作低碳", allergy: "🟢 天然茶葉", story: "在日月潭長大的紅茶有淡淡香氣，是全世界遊客最愛的南投滋味。" },
+            { name: "名間", x: 18, y: 50, food: "名間鳳梨", icon: "🍍", feature: "紅土高原產，甜中帶酸口感紮實。", carbon: "🌱 減碳 92%", allergy: "🟢 天然酵素", story: "名間鄉的紅土種出來的鳳梨超級甜！滿滿的酵素對腸胃很好喔。" },
+            { name: "集集", x: 30, y: 52, food: "集集山蕉", icon: "🍌", feature: "曾為天皇貢品，熟成後香氣濃郁。", carbon: "🌱 友善栽種", allergy: "🟢 豐富鉀離子", story: "集集山蕉口感超級Q彈！以前可是專門送給日本天皇吃的補給品呢。" },
+            { name: "水里", x: 45, y: 60, food: "水里脆梅", icon: "梅", feature: "手工釀造，果肉鮮嫩生津止渴。", carbon: "🌱 傳統古法", allergy: "🟢 天然果實", story: "酸酸甜甜的水里脆梅，最適合路跑完解渴了，口水都快流出來啦！" },
+            { name: "鹿谷", x: 28, y: 70, food: "凍頂烏龍", icon: "🍵", feature: "雲霧滋養，焙火回甘韻味無窮。", carbon: "🌱 產銷低碳", allergy: "🟢 天然茶葉", story: "鹿谷山上清晨採收的茶葉，喝一口回甘一整天，讓你更有活力！" },
+            { name: "竹山", x: 15, y: 80, food: "紅土地瓜", icon: "🍠", feature: "鬆軟綿密，纖維營養價值極高。", carbon: "🌱 減碳 96%", allergy: "🟢 優質澱粉", story: "竹山的地瓜是世界級的！在地種植幫地球省下好多力氣，大家快給小農按個讚！" },
+            { name: "信義", x: 70, y: 75, food: "巨峰葡萄", icon: "🍇", feature: "高海拔冷涼孕育，飽滿多汁。", carbon: "🌱 高海拔鮮採", allergy: "🟢 天然果實", story: "信義鄉的葡萄像黑寶石一樣又黑又甜！連皮吃營養價值最高喔。" }
+        ];
+
+        // --- 2. 狀態 ---
+        let state = {
+            red: { steps: 0, count: 0 },
+            green: { steps: 0, count: 0 },
+            occupied: {}, // townName: 'red' or 'green'
+            activeTeam: null,
+            total: 0
+        };
+
+        // --- 3. 初始化地圖點位 ---
+        function initMap() {
+            const container = document.getElementById('map-interaction-layer');
+            container.innerHTML = ''; 
+            towns.forEach(t => {
+                const btn = document.createElement('div');
+                btn.id = `point-${t.name}`;
+                btn.className = "township-point";
+                btn.style.left = `${t.x}%`;
+                btn.style.top = `${t.y}%`;
+                btn.innerText = t.name;
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    handleSelection(t.name);
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function addStep(team) {
+            if (state.activeTeam) return;
+
+            state[team].steps++;
+            updateUI(team);
+
+            if (state[team].steps >= 10) {
+                state.activeTeam = team;
+                triggerTask(team);
+            }
+        }
+
+        function triggerTask(team) {
+            document.getElementById('infoPanel').classList.remove('hidden');
+            document.getElementById(`card-${team}`).classList.add('active-team-card');
+            
+            const msg = `跑得真快！${team==='red'?'紅隊':'綠隊'}，請在地圖上選擇你喜歡的補給食材吧！`;
+            document.getElementById('foodStory').innerText = msg;
+            speak(msg);
+            
+            // 捲動至地圖區域方便點擊
+            window.scrollTo({ top: 150, behavior: 'smooth' });
+        }
+
+        function handleSelection(townName) {
+            if (!state.activeTeam) return;
+            if (state.occupied[townName]) return;
+
+            const team = state.activeTeam;
+            const data = towns.find(t => t.name === townName);
+
+            // 1. 佔領
+            state.occupied[townName] = team;
+            state[team].count++;
+            state.total++;
+
+            // 2. 更新視覺效果
+            const p = document.getElementById(`point-${townName}`);
+            p.classList.add(team === 'red' ? 'occupied-red' : 'occupied-green', 'disabled');
+
+            // 3. 更新資訊看板
+            updateFoodPanel(data);
+
+            // 4. 語音導覽
+            speak(`你選到了${townName}的${data.food}！${data.story}`);
+
+            // 5. 更新統計數字
+            document.getElementById(`score-${team}`).innerText = state[team].count;
+            document.getElementById('score-remain').innerText = 13 - state.total;
+
+            // 6. 重置與收起看板
+            setTimeout(() => {
+                document.getElementById(`card-${team}`).classList.remove('active-team-card');
+                document.getElementById('infoPanel').classList.add('hidden');
+                state[team].steps = 0;
+                state.activeTeam = null;
+                updateUI(team);
+
+                if (state.total >= 13) endGame();
+            }, 8000);
+        }
+
+        function updateFoodPanel(d) {
+            document.getElementById('foodImg').innerText = d.icon;
+            document.getElementById('foodName').innerText = d.food;
+            document.getElementById('foodFeature').innerText = d.feature;
+            document.getElementById('foodCarbon').innerText = d.carbon;
+            document.getElementById('foodAllergen').innerText = d.allergy;
+            document.getElementById('foodStory').innerText = `「${d.story}」`;
+
+            const box = document.getElementById('allergenBox');
+            if(d.allergy.includes('🔴')) box.className = "bg-red-50 p-6 rounded-3xl border-2 border-red-100";
+            else if(d.allergy.includes('🟡')) box.className = "bg-yellow-50 p-6 rounded-3xl border-2 border-yellow-100";
+            else box.className = "bg-green-50 p-6 rounded-3xl border-2 border-green-100";
+        }
+
+        function updateUI(team) {
+            document.getElementById(`steps-${team}`).innerText = state[team].steps;
+            const bar = document.getElementById(`bar-${team}`);
+            bar.style.width = `${(state[team].steps / 10) * 100}%`;
+
+            const avatar = document.getElementById(`avatar-${team}`);
+            if (state[team].steps > 0 && !state.activeTeam) {
+                avatar.classList.add('running');
+            } else {
+                avatar.classList.remove('running');
+            }
+        }
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'zh-TW';
+            utter.pitch = 1.1; // 親切的音調
+            utter.rate = 1.0; 
+            window.speechSynthesis.speak(utter);
+        }
+
+        function endGame() {
+            const winner = state.red.count > state.green.count ? '紅隊' : '綠隊';
+            document.getElementById('winTitle').innerText = `${winner} 是南投美食之王！`;
+            document.getElementById('winStats').innerText = `紅隊：${state.red.count} | 綠隊：${state.green.count}`;
+            document.getElementById('winModal').classList.remove('hidden');
+            document.getElementById('winModal').classList.add('flex');
+            speak(`恭喜大家！13 種美味的低碳食材都補給完成了。今天的獲勝者是${winner}！我們都是最棒的食農大使喔！`);
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>
