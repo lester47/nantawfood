@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>南投佔領地圖</title>
+
+<style>
+body {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+/* 地圖樣式 */
+svg {
+  width: 500px;
+  border: 1px solid #ccc;
+}
+
+/* 鄉鎮區塊 */
+.region {
+  fill: #ddd;
+  stroke: #333;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* 滑鼠移上去 */
+.region:hover {
+  opacity: 0.7;
+}
+
+/* 紅隊 */
+.red {
+  fill: #ff4d4d !important;
+}
+
+/* 綠隊 */
+.green {
+  fill: #4caf50 !important;
+}
+</style>
+</head>
+
+<body>
+
+<h2>南投縣佔領地圖</h2>
+
+<!-- 選擇隊伍 -->
+<button onclick="setTeam('red')">紅隊</button>
+<button onclick="setTeam('green')">綠隊</button>
+
+<br><br>
+
+<!-- 簡化版南投SVG（示意） -->
+<svg viewBox="0 0 300 400">
+
+  <!-- 仁愛 -->
+  <path id="renai" class="region" d="M50,50 L120,40 L130,100 L60,110 Z"></path>
+
+  <!-- 國姓 -->
+  <path id="guoxing" class="region" d="M130,100 L200,90 L210,150 L140,160 Z"></path>
+
+  <!-- 草屯 -->
+  <path id="caotun" class="region" d="M80,160 L150,150 L160,210 L90,220 Z"></path>
+
+  <!-- 南投市 -->
+  <path id="nantou" class="region" d="M150,150 L220,140 L230,210 L160,210 Z"></path>
+
+  <!-- 埔里 -->
+  <path id="puli" class="region" d="M100,220 L180,210 L190,290 L110,300 Z"></path>
+
+  <!-- 魚池 -->
+  <path id="yuchi" class="region" d="M190,210 L250,200 L260,260 L200,290 Z"></path>
+
+  <!-- 鹿谷 -->
+  <path id="lugu" class="region" d="M110,300 L180,290 L190,350 L120,360 Z"></path>
+
+  <!-- 竹山 -->
+  <path id="zhushan" class="region" d="M180,290 L250,280 L260,350 L190,350 Z"></path>
+
+</svg>
+
+<script>
+let currentTeam = "red";
+
+/* 設定隊伍 */
+function setTeam(team) {
+  currentTeam = team;
+}
+
+/* 點擊事件 */
+document.querySelectorAll('.region').forEach(region => {
+  region.addEventListener('click', function() {
+
+    // 清除原本顏色
+    this.classList.remove('red', 'green');
+
+    // 加上新顏色
+    this.classList.add(currentTeam);
+  });
+});
+</script>
+
+</body>
+</html>
