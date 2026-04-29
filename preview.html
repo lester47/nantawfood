@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>邊跑邊逛・吃遍南投｜離線穩定版</title>
+  <style>
+    :root{--slate-900:#0f172a;--slate-800:#1e293b;--slate-600:#475569;--slate-400:#94a3b8;--slate-200:#e2e8f0;--slate-100:#f1f5f9;--red:#ef4444;--red-soft:#fecaca;--green:#16a34a;--green-soft:#bbf7d0;--orange:#f97316;--orange-soft:#ffedd5;--white:#fff;}
+    *{box-sizing:border-box} body{margin:0;background:#f8fafc;color:var(--slate-800);font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;padding-bottom:40px} button{font-family:inherit;cursor:pointer;border:0} button:disabled{cursor:not-allowed;opacity:.55}
+    header{position:sticky;top:0;z-index:50;background:var(--slate-900);color:#fff;padding:18px 24px;box-shadow:0 10px 28px rgba(15,23,42,.22)} .header-inner{max-width:1180px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{font-size:26px;font-weight:1000;font-style:italic;letter-spacing:-.03em}.legend{display:flex;gap:18px;font-size:13px;font-weight:800}.dot{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px}.red-dot{background:#f87171}.green-dot{background:#4ade80}
+    main{max-width:1180px;margin:0 auto;padding:28px 18px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:42px;box-shadow:0 15px 35px rgba(15,23,42,.12)}.dashboard{padding:30px;display:grid;grid-template-columns:330px 1fr;gap:30px}.title{font-size:34px;font-weight:1000;margin:0}.sub{font-size:12px;color:#64748b;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin:8px 0 34px}.stat-stack{display:grid;gap:14px;margin-top:90px}.stat{border-left:8px solid;border-radius:20px;padding:18px 20px}.stat small{font-size:12px;font-weight:900}.stat strong{font-size:34px}.stat-red{border-color:#f87171;background:#fff1f2;color:#dc2626}.stat-green{border-color:#4ade80;background:#ecfdf5;color:#16a34a}.stat-orange{border-color:#fb923c;background:#fff7ed;color:#ea580c}
+    #map-container{min-height:560px;border-radius:34px;border:1px solid #dbe3ec;background:linear-gradient(180deg,#fff,#f8fafc);position:relative;overflow:hidden}.map-status{position:absolute;top:18px;left:18px;z-index:3;background:#fff;border:1px solid #e2e8f0;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:900;color:#64748b;box-shadow:0 8px 20px rgba(15,23,42,.08)}svg{display:block;width:100%;height:650px}.map-bg{fill:#eef7f1;stroke:#d9eadb;stroke-width:4;filter:drop-shadow(0 18px 25px rgba(15,23,42,.12))}.lake{fill:#7dd3fc;opacity:.75;stroke:#0ea5e9;stroke-width:2}.ridge{fill:none;stroke:#bbf7d0;stroke-width:7;stroke-linecap:round;opacity:.65}.town{fill:url(#townIdle);stroke:#fff;stroke-width:5;transition:.25s;opacity:.94;filter:drop-shadow(0 8px 10px rgba(15,23,42,.16));cursor:not-allowed}.town.selectable{fill:url(#townSelectable);cursor:pointer;opacity:1}.town.selectable:hover{fill:#fde68a;transform:translateY(-4px);filter:drop-shadow(0 14px 16px rgba(245,158,11,.28))}.town.occupied-red{fill:#fca5a5!important;stroke:#ef4444;stroke-width:5;cursor:not-allowed;opacity:1}.town.occupied-green{fill:#86efac!important;stroke:#10b981;stroke-width:5;cursor:not-allowed;opacity:1}.town-label{font-size:17px;font-weight:1000;fill:#1e293b;pointer-events:none;text-anchor:middle;dominant-baseline:middle;text-shadow:0 2px 0 #fff,0 -2px 0 #fff,2px 0 0 #fff,-2px 0 0 #fff}.code-label{font-size:10px;font-weight:900;fill:#475569;pointer-events:none;text-anchor:middle;dominant-baseline:middle;text-shadow:0 1px 2px #fff}.food-label{font-size:22px;pointer-events:none;text-anchor:middle;dominant-baseline:middle}.map-note{font-size:12px;font-weight:900;fill:#64748b;text-anchor:middle}.controls{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:28px}.team-card{padding:30px;border-radius:36px;background:#fff;box-shadow:0 14px 30px rgba(15,23,42,.12);border-bottom:12px solid}.team-card.active{outline:6px solid #f59e0b;box-shadow:0 0 36px rgba(245,158,11,.38)}.team-head{display:flex;justify-content:space-between;align-items:center}.team-title{font-size:28px;font-weight:1000;margin:0}.avatar{font-size:42px}.running{animation:bounce .3s infinite}@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}.progress-row{display:flex;justify-content:space-between;margin:24px 0 10px;font-size:12px;color:#64748b;font-weight:900}.bar-bg{height:16px;background:#eef2f7;border-radius:999px;overflow:hidden}.bar{height:100%;width:0%;transition:.25s}.run-btn{width:100%;margin-top:28px;border-radius:24px;color:#fff;font-size:22px;font-weight:1000;padding:20px;box-shadow:0 10px 18px rgba(15,23,42,.15)}.btn-red{background:#dc2626}.btn-green{background:#16a34a}.info{display:none;margin-top:28px;padding:32px}.info.show{display:block}.info-grid{display:grid;grid-template-columns:280px 1fr;gap:28px}.food-icon{width:230px;height:230px;border-radius:42px;background:#f8fafc;border:8px solid #fff;box-shadow:inset 0 8px 25px rgba(15,23,42,.08);display:flex;align-items:center;justify-content:center;font-size:88px;margin:auto}.food-name{text-align:center;font-size:32px;font-weight:1000}.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.mini{border-radius:24px;padding:20px;background:#f8fafc;border:1px solid #e2e8f0}.mini h4{margin:0 0 10px;font-size:13px;color:#64748b}.mini p{margin:0;line-height:1.7;font-weight:750}.story{margin-top:18px;background:#0f172a;color:#fff;border-radius:26px;border-left:8px solid #f97316;padding:22px;line-height:1.8;font-size:18px}.rich{margin-top:18px;background:#fff7ed;border:1px solid #fed7aa;border-radius:26px;padding:22px;line-height:1.9}.keyword{color:#e11d48;font-weight:1000;border-bottom:2px solid #fda4af}.unlock{margin-top:10px;color:#fb923c;background:transparent;text-decoration:underline;font-size:13px}.modal{position:fixed;inset:0;background:rgba(15,23,42,.95);z-index:200;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center}.modal-box{background:#fff;border-radius:48px;padding:42px;max-width:680px;width:100%;border:4px solid #10b981;box-shadow:0 30px 80px rgba(0,0,0,.3)}.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.mode-btn{text-align:left;border-radius:32px;padding:26px;font-weight:1000}.mode-btn h3{font-size:26px;margin:8px 0}.mode-orange{background:#fff7ed;color:#ea580c;border:2px solid #fed7aa}.mode-green{background:#ecfdf5;color:#059669;border:2px solid #bbf7d0}.hidden{display:none!important}.win{z-index:300}.win-title{font-size:46px;font-weight:1000;margin:0 0 12px}.win-stats{font-size:22px;font-weight:800;color:#64748b}.restart{background:#10b981;color:#fff;padding:18px 42px;border-radius:22px;font-size:22px;font-weight:1000}
+    @media(max-width:900px){.dashboard,.controls,.info-grid,.mini-grid,.mode-grid{grid-template-columns:1fr}.stat-stack{margin-top:30px}.brand{font-size:20px}svg{height:620px}.header-inner{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <div id="startModal" class="modal">
+    <div class="modal-box">
+      <div style="font-size:64px">🏃‍♂️</div>
+      <h1 class="title">邊跑邊逛．吃遍南投</h1>
+      <p class="sub">離線穩定版｜不依賴外部地圖資料</p>
+      <div class="mode-grid">
+        <button onclick="initGame(7)" class="mode-btn mode-orange"><span>複審簡報版</span><h3>半馬模式</h3><p>搜集 7 種食材完賽</p></button>
+        <button onclick="initGame(13)" class="mode-btn mode-green"><span>完整體驗版</span><h3>全馬模式</h3><p>探索 13 鄉鎮全食材</p></button>
+      </div>
+    </div>
+  </div>
+
+  <header><div class="header-inner"><div class="brand">🏃 邊跑邊逛・吃遍南投</div><div class="legend"><span><i class="dot red-dot"></i>紅隊</span><span><i class="dot green-dot"></i>綠隊</span></div></div></header>
+
+  <main>
+    <section class="card dashboard">
+      <div>
+        <h2 class="title">任務探索進度</h2><p class="sub">Discovery Progress</p>
+        <div class="stat-stack">
+          <div class="stat stat-red"><small>紅隊獲得</small><br><strong><span id="score-red">0</span></strong> 種</div>
+          <div class="stat stat-green"><small>綠隊獲得</small><br><strong><span id="score-green">0</span></strong> 種</div>
+          <div class="stat stat-orange"><small>總達成度</small><br><strong><span id="total-progress">0</span> / <span id="goal-label">13</span></strong></div>
+        </div>
+      </div>
+      <div id="map-container"><div id="map-status" class="map-status">美化版地圖：南投 13 鄉鎮市</div><svg id="nantou-svg" viewBox="0 0 650 760" aria-label="南投縣13鄉鎮互動地圖"></svg></div>
+    </section>
+
+    <section class="controls">
+      <div id="card-red" class="team-card" style="border-bottom-color:#ef4444"><div class="team-head"><h3 class="team-title" style="color:#dc2626">TEAM RED</h3><div id="avatar-red" class="avatar">🏃‍♂️</div></div><div class="progress-row"><span>PROGRESS</span><span><span id="steps-red">0</span> / 10</span></div><div class="bar-bg"><div id="bar-red" class="bar" style="background:#ef4444"></div></div><button id="btn-red" onclick="addStep('red')" class="run-btn btn-red">開始跑步</button></div>
+      <div id="card-green" class="team-card" style="border-bottom-color:#22c55e"><div class="team-head"><h3 class="team-title" style="color:#16a34a">TEAM GREEN</h3><div id="avatar-green" class="avatar">🏃‍♀️</div></div><div class="progress-row"><span>PROGRESS</span><span><span id="steps-green">0</span> / 10</span></div><div class="bar-bg"><div id="bar-green" class="bar" style="background:#22c55e"></div></div><button id="btn-green" onclick="addStep('green')" class="run-btn btn-green">開始跑步</button></div>
+    </section>
+
+    <section id="infoPanel" class="card info">
+      <div class="info-grid">
+        <div><div id="foodImg" class="food-icon">❓</div><div id="foodName" class="food-name">凱比準備中...</div></div>
+        <div>
+          <div class="mini-grid"><div class="mini"><h4>特色</h4><p id="foodFeature">-</p></div><div class="mini"><h4>低碳</h4><p id="foodCarbon">-</p></div><div id="allergenBox" class="mini"><h4>食安</h4><p id="foodAllergen">-</p></div></div>
+          <div id="foodRichText" class="rich">跑完 10 步後，地圖就會亮起...</div>
+          <div class="story"><b>🤖 Kebbi AI Guide</b><br><span id="foodStory">請在地圖上點擊選擇補給。</span><br><button id="skipVoiceBtn" onclick="manualUnlock()" class="unlock hidden">如果畫面卡住，請點此解鎖地圖</button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="winModal" class="modal win hidden"><div class="modal-box"><div style="font-size:96px">🏆</div><h2 id="winTitle" class="win-title">挑戰完成</h2><p id="winStats" class="win-stats"></p><button onclick="location.reload()" class="restart">重新開始</button></div></div>
+
+<script>
+const districtCodes = {
+  '南投': { code: '3801', fullName: '南投市' },
+  '埔里': { code: '3802', fullName: '埔里鎮' },
+  '草屯': { code: '3803', fullName: '草屯鎮' },
+  '竹山': { code: '3804', fullName: '竹山鎮' },
+  '集集': { code: '3805', fullName: '集集鎮' },
+  '名間': { code: '3806', fullName: '名間鄉' },
+  '鹿谷': { code: '3807', fullName: '鹿谷鄉' },
+  '中寮': { code: '3808', fullName: '中寮鄉' },
+  '魚池': { code: '3809', fullName: '魚池鄉' },
+  '國姓': { code: '3810', fullName: '國姓鄉' },
+  '水里': { code: '3811', fullName: '水里鄉' },
+  '信義': { code: '3812', fullName: '信義鄉' },
+  '仁愛': { code: '3813', fullName: '仁愛鄉' }
+};
+
+const database = {
+  '仁愛': { icon:'🍄', food:'高山香菇', feature:'森林環境成長，肉質肥厚鮮甜。', carbon:'🌱 減碳 88%', allergen:'🟢 天然食材', voice:'仁愛鄉，高山香菇。吸收森林精華，營養價值極高。', rich:'仁愛鄉的<span class="keyword">高山香菇</span>生長在海拔1000公尺以上的原始林區。' },
+  '國姓': { icon:'☕', food:'國姓咖啡', feature:'精品豆，具有柑橘與堅果香氣。', carbon:'🌱 減碳 95%', allergen:'🟢 咖啡因注意', voice:'國姓鄉，精品咖啡。海拔適中，香氣優雅濃郁。', rich:'國姓鄉是台灣重要的<span class="keyword">精品咖啡</span>產區。' },
+  '草屯': { icon:'🍡', food:'手工麻糬', feature:'糯米香Q，是在地傳承的美味。', carbon:'🌱 在地米食', allergen:'🔴 含花生糯米', voice:'草屯鎮，手工麻糬。精選優質糯米，口感彈牙飽滿。', rich:'草屯麻糬傳承了數十年的製作工法，使用在地<span class="keyword">優質糯米</span>。' },
+  '南投': { icon:'🍜', food:'南投意麵', feature:'傳統曬製，麵體彈牙有勁。', carbon:'🌱 在地手作', allergen:'🟡 含有小麥', voice:'南投市，特色意麵。傳統工法製作，吸附滿滿精華。', rich:'南投意麵經過<span class="keyword">陽光短暫曝曬</span>，質地紮實且具備吸附醬汁的能力。' },
+  '中寮': { icon:'🍯', food:'龍眼蜂蜜', feature:'純淨採集，滴滴芬芳透亮。', carbon:'🌱 友善蜜源', allergen:'🟡 嬰兒忌食', voice:'中寮鄉，龍眼蜂蜜。生態環境豐富，口感純淨厚實。', rich:'中寮擁有廣大的龍眼林，需注意<span class="keyword">一歲以下嬰幼兒</span>發育未全，<span class="keyword">請勿食用</span>。' },
+  '埔里': { icon:'🥬', food:'茭白筍', feature:'質地脆嫩，美人腿美稱。', carbon:'🌱 湧泉灌溉', allergen:'🟢 高纖安全', voice:'埔里鎮，茭白筍。潔淨湧泉灌溉，質地脆甜如梨。', rich:'埔里鎮擁有全台最清澈的地下湧泉，產出潔白的<span class="keyword">美人腿</span>。' },
+  '魚池': { icon:'🫖', food:'日月潭紅茶', feature:'具有薄荷與肉桂香氣。', carbon:'🌱 永續經營', allergen:'🟢 天然茶葉', voice:'魚池鄉，紅玉紅茶。香氣受國際肯定，是在地驕傲。', rich:'日月潭魚池鄉是<span class="keyword">紅玉紅茶</span>的故鄉。' },
+  '名間': { icon:'🍍', food:'名間鳳梨', feature:'紅土產出，酸甜比例完美。', carbon:'🌱 減碳 92%', allergen:'🟢 天然酵素', voice:'名間鄉，名間鳳梨。紅土環境生長，富含健康酵素。', rich:'名間鄉的<span class="keyword">紅土高原</span>土質肥沃，適合鳳梨生長。' },
+  '集集': { icon:'🍌', food:'集集山蕉', feature:'曾為天皇貢品，口感紮實。', carbon:'🌱 友善栽種', allergen:'🟢 安全無敏', voice:'集集鎮，山蕉。口感Q彈紮實，是理想能量。', rich:'集集山蕉在日治時期曾是專門進貢給<span class="keyword">日本天皇的補給品</span>。' },
+  '水里': { icon:'🧉', food:'水里脆梅', feature:'手工釀造，生津止渴。', carbon:'🌱 古法煉製', allergen:'🟢 天然果實', voice:'水里鄉，脆梅。手工古法製作，有效消除身體疲勞。', rich:'水里鄉小農手工採收並以<span class="keyword">古法醃漬</span>。梅子中的有機酸能消除運動後的疲勞。' },
+  '鹿谷': { icon:'🍵', food:'凍頂烏龍', feature:'雲霧滋養，焙火回甘。', carbon:'🌱 產銷低碳', allergen:'🟢 天然茶葉', voice:'鹿谷鄉，凍頂茶。氣候涼爽精心烘焙，喉韻持久深遠。', rich:'鹿谷<span class="keyword">凍頂烏龍茶</span>是台灣最具代表性的焙火茶。' },
+  '竹山': { icon:'🍠', food:'紅土地瓜', feature:'紅土孕育，質地綿密。', carbon:'🌱 減碳 96%', allergen:'🟢 優質澱粉', voice:'竹山鎮，紅土地瓜。口感綿密極甜，是在地減碳代表。', rich:'竹山鎮特有的<span class="keyword">紅色黏質土壤</span>富含礦物質，讓地瓜質地格外綿密。' },
+  '信義': { icon:'🍇', food:'巨峰葡萄', feature:'高海拔冷涼孕育，飽滿多汁。', carbon:'🌱 高海拔鮮採', allergen:'🟢 天然果實', voice:'信義鄉，巨峰葡萄。飽滿如黑寶石，連皮食用營養最高。', rich:'信義鄉高海拔純淨溪水孕育出像<span class="keyword">黑寶石</span>般的巨峰葡萄。' }
+};
+
+const mapRegions = [
+  {name:'仁愛', d:'M345 45 C445 5 550 35 615 130 C635 175 620 235 560 290 C515 335 450 315 405 265 C365 225 350 145 345 45 Z', label:[492,172]},
+  {name:'國姓', d:'M245 75 C285 45 340 48 365 92 C388 130 376 176 335 205 C292 226 260 195 240 160 C222 125 220 95 245 75 Z', label:[305,137]},
+  {name:'草屯', d:'M130 115 C168 80 226 78 260 115 C278 150 256 198 210 210 C165 222 125 190 114 154 C108 136 115 123 130 115 Z', label:[190,150]},
+  {name:'南投', d:'M85 230 C98 190 145 175 190 198 C220 215 225 265 200 300 C170 338 110 326 82 288 C68 268 72 245 85 230 Z', label:[145,260]},
+  {name:'埔里', d:'M335 205 C377 180 430 196 458 235 C488 278 455 335 410 348 C362 362 315 334 306 286 C300 250 310 222 335 205 Z', label:[390,273]},
+  {name:'中寮', d:'M195 300 C230 280 295 300 328 325 C355 354 340 410 296 435 C250 462 192 430 173 386 C160 356 168 318 195 300 Z', label:[250,370]},
+  {name:'魚池', d:'M405 348 C450 330 495 360 510 400 C527 448 488 492 438 488 C396 485 365 455 362 410 C359 380 377 358 405 348 Z', label:[438,420]},
+  {name:'名間', d:'M90 340 C125 318 171 330 195 365 C220 400 202 454 160 474 C118 494 74 465 62 423 C53 390 63 358 90 340 Z', label:[136,410]},
+  {name:'集集', d:'M245 435 C290 410 350 425 375 465 C398 503 365 548 318 552 C270 555 232 523 228 478 C226 460 232 445 245 435 Z', label:[305,490]},
+  {name:'水里', d:'M375 492 C425 470 488 493 516 538 C545 584 512 642 455 654 C405 664 355 632 345 580 C336 540 347 510 375 492 Z', label:[443,575]},
+  {name:'鹿谷', d:'M140 482 C182 452 235 470 270 510 C300 545 280 605 235 632 C185 663 126 632 108 580 C95 542 107 503 140 482 Z', label:[197,565]},
+  {name:'竹山', d:'M55 475 C95 448 140 468 157 515 C175 563 143 628 90 648 C42 666 12 620 20 565 C25 525 32 492 55 475 Z', label:[86,565]},
+  {name:'信義', d:'M500 405 C568 390 630 450 630 540 C630 620 574 705 495 720 C410 738 345 675 350 600 C354 548 390 505 448 488 C470 456 474 425 500 405 Z', label:[497,594]}
+];
+
+let state = { red:{steps:0,count:0}, green:{steps:0,count:0}, occupied:{}, activeTeam:null, total:0, gameOver:false, targetGoal:13 };
+let lastTaskTeam = null;
+let speechTimeout = null;
+
+function initGame(goal){ state.targetGoal=goal; document.getElementById('goal-label').innerText=goal; document.getElementById('startModal').classList.add('hidden'); initMap(); }
+function initMap(){
+  const svg = document.getElementById('nantou-svg');
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="townIdle" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#dbeafe"/><stop offset="1" stop-color="#bfdbfe"/></linearGradient>
+      <linearGradient id="townSelectable" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#d1fae5"/><stop offset="1" stop-color="#a7f3d0"/></linearGradient>
+    </defs>
+    <path class="map-bg" d="M340 30 C465 -10 595 45 635 150 C665 230 605 300 560 352 C640 405 665 525 625 630 C585 720 490 760 390 720 C330 695 295 645 280 620 C235 680 160 680 100 650 C30 615 0 560 28 492 C50 438 55 380 78 330 C35 275 50 205 105 170 C105 115 155 70 225 85 C255 45 300 28 340 30 Z"/>
+    <path class="ridge" d="M380 80 C430 120 455 170 450 230"/><path class="ridge" d="M480 430 C505 500 498 570 460 645"/>
+    <ellipse class="lake" cx="438" cy="421" rx="38" ry="28"/><text x="438" y="422" class="map-note">日月潭</text>
+  `;
+  mapRegions.forEach(r=>{
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('data-town', r.name);
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', r.d); path.setAttribute('class','town'); path.setAttribute('data-town', r.name);
+    path.addEventListener('click', ()=>handleMapClick(r.name));
+    const food = document.createElementNS('http://www.w3.org/2000/svg','text');
+    food.setAttribute('x', r.label[0]); food.setAttribute('y', r.label[1]-24); food.setAttribute('class','food-label');
+    food.textContent = database[r.name]?.icon || '📍';
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x', r.label[0]); text.setAttribute('y', r.label[1]); text.setAttribute('class','town-label');
+    text.textContent = districtCodes[r.name].fullName;
+    const code = document.createElementNS('http://www.w3.org/2000/svg','text');
+    code.setAttribute('x', r.label[0]); code.setAttribute('y', r.label[1]+20); code.setAttribute('class','code-label');
+    code.textContent = districtCodes[r.name].code;
+    g.appendChild(path); g.appendChild(food); g.appendChild(text); g.appendChild(code); svg.appendChild(g);
+  });
+}
+function setSelectable(enabled){ document.querySelectorAll('.town').forEach(el=>{ const town=el.dataset.town; el.classList.toggle('selectable', enabled && !state.occupied[town]); }); }
+function paintTown(town, team){ document.querySelectorAll(`.town[data-town="${town}"]`).forEach(el=>{ el.classList.remove('selectable'); el.classList.add(`occupied-${team}`); }); }
+function addStep(team){ if(state.activeTeam || state.gameOver) return; state[team].steps++; updatePlayerUI(team); if(state[team].steps>=10 && !state.activeTeam){ state.activeTeam=team; triggerTask(team); } }
+function triggerTask(team){ lastTaskTeam=team; document.getElementById('infoPanel').classList.add('show'); document.getElementById(`card-${team}`).classList.add('active'); document.getElementById('foodStory').innerText='跑得真棒！請在地圖上選擇一個鄉鎮進行補給。'; document.getElementById('skipVoiceBtn').classList.remove('hidden'); setSelectable(true); speak('請選擇補給食材。'); window.scrollTo({top:120,behavior:'smooth'}); }
+function manualUnlock(){ if(state.activeTeam==='speaking' && lastTaskTeam){ state.activeTeam=lastTaskTeam; setSelectable(true); document.getElementById('skipVoiceBtn').classList.add('hidden'); } }
+function handleMapClick(town){ if(state.activeTeam==='speaking' || !state.activeTeam || state.gameOver || state.occupied[town]) return; const team=state.activeTeam; const d=database[town]; if(!d) return; state.activeTeam='speaking'; state.occupied[town]=team; state[team].count++; state.total++; document.getElementById('score-red').innerText=state.red.count; document.getElementById('score-green').innerText=state.green.count; document.getElementById('total-progress').innerText=state.total; setSelectable(false); paintTown(town, team); updateFoodPanel(town,d); state.red.steps=0; state.green.steps=0; speak(d.voice,()=>{ setTimeout(()=>{ state.activeTeam=null; document.querySelectorAll('.team-card.active').forEach(el=>el.classList.remove('active')); document.getElementById('infoPanel').classList.remove('show'); document.getElementById('skipVoiceBtn').classList.add('hidden'); updatePlayerUI('red'); updatePlayerUI('green'); if(state.total>=state.targetGoal){ state.gameOver=true; endGame(); } },900); }); }
+function updateFoodPanel(name,d){ document.getElementById('foodImg').innerText=d.icon; document.getElementById('foodName').innerText=districtCodes[name].fullName+'：'+d.food; document.getElementById('foodFeature').innerText=d.feature; document.getElementById('foodCarbon').innerText=d.carbon; document.getElementById('foodAllergen').innerText=d.allergen; document.getElementById('foodStory').innerText=d.voice; document.getElementById('foodRichText').innerHTML=d.rich; const box=document.getElementById('allergenBox'); box.style.background=d.allergen.includes('🔴')?'#fff1f2':d.allergen.includes('🟡')?'#fefce8':'#f0fdf4'; }
+function updatePlayerUI(team){ const steps=state[team].steps; document.getElementById(`steps-${team}`).innerText=steps; document.getElementById(`bar-${team}`).style.width=`${Math.min(100,(steps/10)*100)}%`; const avatar=document.getElementById(`avatar-${team}`); avatar.classList.toggle('running', steps>0 && !state.activeTeam); document.getElementById(`btn-${team}`).disabled=!!state.activeTeam || state.gameOver; }
+function speak(text,onEnd){ if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return; } window.speechSynthesis.cancel(); if(speechTimeout) clearTimeout(speechTimeout); const u=new SpeechSynthesisUtterance(text); u.lang='zh-TW'; u.rate=1.05; let done=false; const finish=()=>{ if(done)return; done=true; if(speechTimeout) clearTimeout(speechTimeout); if(onEnd) onEnd(); }; u.onend=finish; u.onerror=finish; speechTimeout=setTimeout(finish,Math.max(1600,text.length*260)); window.speechSynthesis.speak(u); }
+function endGame(){ const r=state.red.count,g=state.green.count; let title,msg; if(r>g){title='紅隊獲勝！';msg=`紅隊：${r}｜綠隊：${g}。紅隊在本次跑旅中表現優異。`;} else if(g>r){title='綠隊獲勝！';msg=`紅隊：${r}｜綠隊：${g}。綠隊在本次跑旅中表現優異。`;} else{title='雙方平手！';msg=`紅隊：${r}｜綠隊：${g}。雙方都是優秀的食農小大使。`;} document.getElementById('winTitle').innerText=title; document.getElementById('winStats').innerText=msg; document.getElementById('winModal').classList.remove('hidden'); speak('任務結束。'+msg); }
+</script>
+</body>
+</html>
