@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>南投食農小大使｜食農領地戰 v1.3 Room ID</title>
+  <title>南投食農小大使｜食農領地戰 v1.2 手機體感</title>
   <meta name="theme-color" content="#2f855a" />
   <meta name="description" content="南投食農領地戰 PWA 可安裝版，結合紅綠隊競賽、南投13鄉鎮食農地圖與離線展示。" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -809,12 +809,9 @@
       <div class="pwa-tools">
         <div id="pwaStatus" class="pwa-pill">線上展示模式</div>
         <div id="mqttStatus" class="pwa-pill offline">MQTT 尚未連線</div>
-        <div id="roomStatus" class="pwa-pill">房間：讀取中</div>
-        <a id="playerLink" class="install-btn show" href="./player.html" target="_blank" style="text-decoration:none;display:inline-block;">📱 手機體感控制器</a>
-        <button id="newRoomBtn" class="install-btn show">🎲 建立新房間</button>
-        <button id="copyPlayerBtn" class="install-btn show">🔗 複製玩家網址</button>
+        <a class="install-btn show" href="./player.html" target="_blank" style="text-decoration:none;display:inline-block;">📱 手機體感控制器</a>
         <button id="installPwaBtn" class="install-btn">📲 安裝到主畫面</button>
-        <div class="status-pill">v1.3｜Room ID 房間制 × MQTTGO｜保留手動備援</div>
+        <div class="status-pill">v1.2｜手機體感 × MQTT｜保留手動備援</div>
       </div>
     </div>
   </header>
@@ -1479,68 +1476,16 @@
     $("fullMode").onclick = () => setMode(13);
     $("resetBtn").onclick = () => location.reload();
 
-    // ===== v1.3 Room ID 房間制版：主畫面 MQTT 接收器 =====
+    // ===== v1.2 手機體感單房間版：主畫面 MQTT 接收器 =====
     const MQTT_CONFIG = {
-      brokerUrl: "wss://MQTTGO.io:8084/mqtt",
-      topicBase: "nantou-food-race"
+      brokerUrl: "wss://broker.mqttgo.io:8084/mqtt",
+      topics: {
+        red: "nantou-food-race/red",
+        green: "nantou-food-race/green"
+      }
     };
 
     let mqttClient = null;
-    let activeRoomId = "";
-
-    function normalizeRoomId(value) {
-      return String(value || "")
-        .trim()
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, "")
-        .slice(0, 6);
-    }
-
-    function generateRoomId() {
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let id = "";
-      for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
-      return id;
-    }
-
-    function getInitialRoomId() {
-      const params = new URLSearchParams(location.search);
-      const fromUrl = normalizeRoomId(params.get("room"));
-      if (fromUrl) {
-        localStorage.setItem("nantou-food-room-id", fromUrl);
-        return fromUrl;
-      }
-
-      const saved = normalizeRoomId(localStorage.getItem("nantou-food-room-id"));
-      if (saved) return saved;
-
-      const created = generateRoomId();
-      localStorage.setItem("nantou-food-room-id", created);
-      return created;
-    }
-
-    function getPlayerUrl() {
-      const basePath = location.pathname.replace(/[^/]*$/, "");
-      return `${location.origin}${basePath}player.html?room=${activeRoomId}`;
-    }
-
-    function getRoomTopics(roomId = activeRoomId) {
-      return {
-        red: `${MQTT_CONFIG.topicBase}/${roomId}/red`,
-        green: `${MQTT_CONFIG.topicBase}/${roomId}/green`,
-        summary: `${MQTT_CONFIG.topicBase}/${roomId}/summary`
-      };
-    }
-
-    function updateRoomDisplay() {
-      const roomStatus = document.getElementById("roomStatus");
-      const playerLink = document.getElementById("playerLink");
-      if (roomStatus) roomStatus.textContent = `房間：${activeRoomId}`;
-      if (playerLink) {
-        playerLink.href = getPlayerUrl();
-        playerLink.textContent = `📱 手機控制器｜房間 ${activeRoomId}`;
-      }
-    }
 
     function setMqttStatus(text, online = false) {
       const el = document.getElementById("mqttStatus");
@@ -1554,41 +1499,11 @@
       try { data = JSON.parse(payloadText); } catch (e) { data = {}; }
 
       if (data.mode && data.mode !== "mobile") return;
-      if (data.roomId && normalizeRoomId(data.roomId) !== activeRoomId) return;
-
       const incomingTeam = data.team || team;
       if (incomingTeam !== "red" && incomingTeam !== "green") return;
 
       addStep(incomingTeam);
-      debug(`收到房間 ${activeRoomId} 手機體感步伐：${incomingTeam === "red" ? "紅隊" : "綠隊"}`);
-    }
-
-    function initRoomControls() {
-      activeRoomId = getInitialRoomId();
-      updateRoomDisplay();
-
-      const newRoomBtn = document.getElementById("newRoomBtn");
-      if (newRoomBtn) {
-        newRoomBtn.onclick = () => {
-          const newId = generateRoomId();
-          localStorage.setItem("nantou-food-room-id", newId);
-          location.href = `${location.pathname}?room=${newId}`;
-        };
-      }
-
-      const copyPlayerBtn = document.getElementById("copyPlayerBtn");
-      if (copyPlayerBtn) {
-        copyPlayerBtn.onclick = async () => {
-          const url = getPlayerUrl();
-          try {
-            await navigator.clipboard.writeText(url);
-            copyPlayerBtn.textContent = "✅ 已複製";
-            setTimeout(() => copyPlayerBtn.textContent = "🔗 複製玩家網址", 1400);
-          } catch (e) {
-            prompt("請複製玩家網址", url);
-          }
-        };
-      }
+      debug(`收到手機體感步伐：${incomingTeam === "red" ? "紅隊" : "綠隊"}`);
     }
 
     function initMqttRaceBridge() {
@@ -1598,8 +1513,7 @@
         return;
       }
 
-      const topics = getRoomTopics();
-      const clientId = `nantou-main-${activeRoomId}-${Math.random().toString(16).slice(2)}`;
+      const clientId = "nantou-main-" + Math.random().toString(16).slice(2);
       mqttClient = mqtt.connect(MQTT_CONFIG.brokerUrl, {
         clientId,
         clean: true,
@@ -1608,13 +1522,13 @@
       });
 
       mqttClient.on("connect", () => {
-        setMqttStatus(`MQTT 已連線｜${activeRoomId}`, true);
-        mqttClient.subscribe([topics.red, topics.green], (err) => {
+        setMqttStatus("MQTT 已連線", true);
+        mqttClient.subscribe([MQTT_CONFIG.topics.red, MQTT_CONFIG.topics.green], (err) => {
           if (err) {
             setMqttStatus("MQTT 訂閱失敗", false);
             console.warn("[MQTT] 訂閱失敗", err);
           } else {
-            console.log("[MQTT] 已訂閱 Room Topic", topics);
+            console.log("[MQTT] 已訂閱手機體感 Topic", MQTT_CONFIG.topics);
           }
         });
       });
@@ -1628,14 +1542,13 @@
 
       mqttClient.on("message", (topic, message) => {
         const text = message.toString();
-        if (topic === topics.red) handleMobileStep("red", text);
-        if (topic === topics.green) handleMobileStep("green", text);
+        if (topic === MQTT_CONFIG.topics.red) handleMobileStep("red", text);
+        if (topic === MQTT_CONFIG.topics.green) handleMobileStep("green", text);
       });
     }
 
     updateUI();
     setupMap();
-    initRoomControls();
     initMqttRaceBridge();
   </script>
 
