@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>邊跑邊逛 吃遍南投 - 專業競賽系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes bounce-run { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .running { animation: bounce-run 0.3s infinite; }
+        
+        .township-path { 
+            transition: all 0.3s ease;
+            cursor: pointer;
+            stroke: #fff;
+            stroke-width: 1.5;
+            fill: #E2E8F0;
+        }
+        
+        .selectable:hover { fill: #CBD5E1; filter: brightness(1.05); }
+        .occupied-red { fill: #FCA5A5 !important; fill-opacity: 0.9; cursor: not-allowed; }
+        .occupied-green { fill: #86EFAC !important; fill-opacity: 0.9; cursor: not-allowed; }
+        .active-task-area { border: 4px solid #F59E0B; animation: pulse-border 2s infinite; }
+        
+        @keyframes pulse-border { 0% { border-color: #F59E0B; } 50% { border-color: #FEF3C7; } 100% { border-color: #F59E0B; } }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .voice-bar { width: 3px; height: 10px; background: #F59E0B; animation: sound-wave 1s infinite ease-in-out; }
+        @keyframes sound-wave { 0%, 100% { height: 5px; } 50% { height: 15px; } }
+        
+        .pointer-none { pointer-events: none !important; }
+        
+        /* 模式選擇彈窗 */
+        .scale-in { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* 滾動條美化 */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        /* 關鍵字樣式 */
+        .keyword { color: #e11d48; font-weight: 900; border-bottom: 1px solid #fda4af; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans pb-20">
+
+    <!-- 啟動模式選擇 -->
+    <div id="startModal" class="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[200] flex items-center justify-center p-6">
+        <div class="bg-white rounded-[4rem] p-12 max-w-2xl w-full shadow-2xl text-center scale-in border-4 border-emerald-500">
+            <div class="text-6xl mb-6">🏃‍♂️</div>
+            <h1 class="text-4xl font-black text-slate-800 mb-2">邊跑邊逛．吃遍南投</h1>
+            <p class="text-slate-500 font-bold mb-10">請選擇本次食農跑旅的競賽模式</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button onclick="startGame(7)" class="group bg-orange-50 hover:bg-orange-500 p-8 rounded-[3rem] border-2 border-orange-200 transition-all text-left relative overflow-hidden">
+                    <div class="relative z-10">
+                        <span class="bg-orange-500 group-hover:bg-white text-white group-hover:text-orange-600 px-4 py-1 rounded-full text-xs font-black uppercase">複審/演示專用</span>
+                        <h3 class="text-2xl font-black text-orange-600 group-hover:text-white mt-4">半馬模式</h3>
+                        <p class="text-orange-400 group-hover:text-orange-100 font-bold mt-1">搜集 7 種食材即完賽</p>
+                    </div>
+                    <div class="absolute right-[-20px] bottom-[-20px] text-8xl opacity-10 group-hover:opacity-20 transition-all">🥈</div>
+                </button>
+
+                <button onclick="startGame(13)" class="group bg-emerald-50 hover:bg-emerald-500 p-8 rounded-[3rem] border-2 border-emerald-200 transition-all text-left relative overflow-hidden">
+                    <div class="relative z-10">
+                        <span class="bg-emerald-500 group-hover:bg-white text-white group-hover:text-emerald-600 px-4 py-1 rounded-full text-xs font-black uppercase">完整體驗</span>
+                        <h3 class="text-2xl font-black text-emerald-600 group-hover:text-white mt-4">全馬模式</h3>
+                        <p class="text-emerald-400 group-hover:text-emerald-100 font-bold mt-1">挑戰全縣 13 個鄉鎮</p>
+                    </div>
+                    <div class="absolute right-[-20px] bottom-[-20px] text-8xl opacity-10 group-hover:opacity-20 transition-all">🏆</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <header class="bg-slate-900 text-white p-5 shadow-2xl sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-person-running text-2xl text-emerald-400"></i>
+                <h1 class="text-2xl font-black italic tracking-tighter">邊跑邊逛・吃遍南投</h1>
+            </div>
+            <div class="flex gap-4 text-xs font-bold">
+                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded bg-red-400"></span> 紅隊</div>
+                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded bg-green-400"></span> 綠隊</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-8 space-y-10">
+        
+        <!-- 統計看板 -->
+        <section class="bg-white rounded-[3rem] shadow-xl p-8 border border-slate-200 overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start gap-8">
+                <div class="md:w-1/3">
+                    <h2 class="text-4xl font-black text-slate-800 mb-2">探索進度</h2>
+                    <p class="text-slate-400 font-bold text-sm tracking-widest uppercase mb-6" id="mode-label">Nantou Food Explorer</p>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-red-50 p-5 rounded-3xl border-l-8 border-red-400 shadow-sm transition-all">
+                            <p class="text-xs font-bold text-red-400 uppercase">Red Team</p>
+                            <p class="text-3xl font-black text-red-600"><span id="score-red">0</span> <small class="text-xs text-slate-400">種</small></p>
+                        </div>
+                        <div class="bg-green-50 p-5 rounded-3xl border-l-8 border-green-400 shadow-sm transition-all">
+                            <p class="text-xs font-bold text-green-400 uppercase">Green Team</p>
+                            <p class="text-3xl font-black text-green-600"><span id="score-green">0</span> <small class="text-xs text-slate-400">種</small></p>
+                        </div>
+                        <div class="bg-orange-50 p-5 rounded-3xl border-l-8 border-orange-400 shadow-sm transition-all">
+                            <p class="text-xs font-bold text-orange-400 uppercase">本局總進度</p>
+                            <p class="text-3xl font-black text-orange-600"><span id="total-progress">0</span> / <span id="goal-label">13</span> <small class="text-xs text-slate-400">種達成</small></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="md:w-2/3 flex justify-center bg-slate-50 rounded-3xl p-4 relative shadow-inner">
+                    <svg id="nantouMap" viewBox="0 0 500 650" class="w-full max-w-[450px] h-auto drop-shadow-lg">
+                        <g id="map-paths">
+                            <path id="town-仁愛鄉" d="M300,50 L450,150 L480,300 L380,350 L320,250 L280,180 Z" class="township-path" onclick="handleMapClick('仁愛鄉')"></path>
+                            <path id="town-國姓鄉" d="M220,100 L300,50 L280,180 L200,160 Z" class="township-path" onclick="handleMapClick('國姓鄉')"></path>
+                            <path id="town-草屯鎮" d="M80,120 L220,100 L200,160 L100,180 Z" class="township-path" onclick="handleMapClick('草屯鎮')"></path>
+                            <path id="town-南投市" d="M50,180 L100,180 L140,240 L60,260 Z" class="township-path" onclick="handleMapClick('南投市')"></path>
+                            <path id="town-中寮鄉" d="M140,240 L220,240 L240,300 L120,300 Z" class="township-path" onclick="handleMapClick('中寮鄉')"></path>
+                            <path id="town-埔里鎮" d="M200,160 L280,180 L320,250 L240,240 Z" class="township-path" onclick="handleMapClick('埔里鎮')"></path>
+                            <path id="town-魚池鄉" d="M240,240 L320,250 L380,350 L280,350 L240,300 Z" class="township-path" onclick="handleMapClick('魚池鄉')"></path>
+                            <path id="town-名間鄉" d="M60,260 L120,300 L100,380 L30,350 Z" class="township-path" onclick="handleMapClick('名間鄉')"></path>
+                            <path id="town-集集鎮" d="M120,300 L240,300 L220,380 L100,380 Z" class="township-path" onclick="handleMapClick('集集鎮')"></path>
+                            <path id="town-水里鄉" d="M220,380 L280,350 L320,450 L200,450 Z" class="township-path" onclick="handleMapClick('水里鄉')"></path>
+                            <path id="town-鹿谷鄉" d="M100,380 L220,380 L180,500 L80,480 Z" class="township-path" onclick="handleMapClick('鹿谷鄉')"></path>
+                            <path id="town-竹山鎮" d="M30,350 L100,380 L80,480 L20,550 Z" class="township-path" onclick="handleMapClick('竹山鎮')"></path>
+                            <path id="town-信義鄉" d="M280,350 L380,350 L420,600 L200,600 L200,450 L320,450 Z" class="township-path" onclick="handleMapClick('信義鄉')"></path>
+                        </g>
+                        <g fill="#475569" font-size="14" font-weight="900" pointer-events="none" text-anchor="middle">
+                            <text x="140" y="145">草屯</text><text x="250" y="90">國姓</text><text x="380" y="200">仁愛</text>
+                            <text x="250" y="205">埔里</text><text x="95" y="225">南投</text><text x="180" y="270">中寮</text>
+                            <text x="310" y="300">魚池</text><text x="165" y="345">集集</text><text x="75" y="325">名間</text>
+                            <text x="250" y="420">水里</text><text x="145" y="445">鹿谷</text><text x="65" y="435">竹山</text>
+                            <text x="310" y="520">信義</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第二區：路跑 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div id="card-red" class="bg-white rounded-[3rem] p-8 shadow-lg border-b-[12px] border-red-500 transition-all duration-300">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-3xl font-black text-red-600 italic">TEAM RED</h3>
+                    <div id="avatar-red" class="text-5xl">🏃‍♂️</div>
+                </div>
+                <div class="space-y-4 mb-4">
+                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
+                        <span>Steps</span>
+                        <span><span id="steps-red">0</span> / 10</span>
+                    </div>
+                    <div class="h-5 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="bar-red" class="h-full bg-red-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+                <button id="btn-red" onclick="addStep('red')" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-xl disabled:bg-slate-300 disabled:cursor-not-allowed">
+                    開始跑步
+                </button>
+            </div>
+
+            <div id="card-green" class="bg-white rounded-[3rem] p-8 shadow-lg border-b-[12px] border-green-500 transition-all duration-300">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-3xl font-black text-green-600 italic">TEAM GREEN</h3>
+                    <div id="avatar-green" class="text-5xl">🏃‍♀️</div>
+                </div>
+                <div class="space-y-4 mb-4">
+                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
+                        <span>Steps</span>
+                        <span><span id="steps-green">0</span> / 10</span>
+                    </div>
+                    <div class="h-5 bg-slate-100 rounded-full overflow-hidden">
+                        <div id="bar-green" class="h-full bg-green-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+                <button id="btn-green" onclick="addStep('green')" class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all text-xl disabled:bg-slate-300 disabled:cursor-not-allowed">
+                    開始跑步
+                </button>
+            </div>
+        </div>
+
+        <!-- 第三區：資訊看板 (豐富文本 + 關鍵字高亮) -->
+        <section id="infoPanel" class="hidden fade-in">
+            <div class="bg-white rounded-[4rem] p-10 md:p-14 shadow-2xl border-4 border-orange-100 relative">
+                <div class="flex flex-col lg:flex-row gap-12 items-start">
+                    <div class="w-full lg:w-1/3 flex flex-col items-center sticky top-24">
+                        <div class="w-64 h-64 bg-slate-50 rounded-[3.5rem] flex items-center justify-center text-8xl shadow-inner border-8 border-white mb-6" id="foodImg">❓</div>
+                        <h2 class="text-4xl font-black text-slate-800 text-center" id="foodName">補給中...</h2>
+                    </div>
+
+                    <div class="w-full lg:w-2/3 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div class="bg-blue-50 p-6 rounded-3xl border-2 border-blue-100 shadow-sm">
+                                <div class="flex items-center gap-2 mb-3 text-blue-500 font-black text-xs uppercase"><i class="fa-solid fa-star"></i> 特色</div>
+                                <p id="foodFeature" class="text-sm font-bold text-slate-700 leading-relaxed">-</p>
+                            </div>
+                            <div class="bg-emerald-50 p-6 rounded-3xl border-2 border-emerald-100 shadow-sm">
+                                <div class="flex items-center gap-2 mb-3 text-emerald-500 font-black text-xs uppercase"><i class="fa-solid fa-leaf"></i> 低碳</div>
+                                <p id="foodCarbon" class="text-sm font-bold text-slate-700 leading-relaxed">-</p>
+                            </div>
+                            <div id="allergenBox" class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 shadow-sm">
+                                <div class="flex items-center gap-2 mb-3 text-slate-400 font-black text-xs uppercase"><i class="fa-solid fa-shield-halved"></i> 食安</div>
+                                <p id="foodAllergen" class="text-sm font-bold text-slate-700 leading-relaxed">-</p>
+                            </div>
+                        </div>
+
+                        <!-- 豐富文本顯示區 (支援 HTML) -->
+                        <div class="bg-orange-50 p-8 rounded-[2.5rem] border-2 border-orange-100 shadow-inner">
+                            <h4 class="text-orange-600 font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-book-open"></i> 詳細導覽文本 (Quick View)
+                            </h4>
+                            <div id="foodRichText" class="text-slate-600 text-sm md:text-base leading-loose font-medium h-48 overflow-y-auto custom-scroll pr-4">
+                                請選擇補給食材以查看完整故事。
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900 text-white p-7 rounded-3xl flex items-start gap-6 shadow-xl border-l-8 border-orange-500">
+                            <div class="text-4xl">🤖</div>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between mb-1">
+                                    <p class="text-xs font-bold text-orange-400 tracking-widest uppercase">Kebbi AI Guide</p>
+                                    <div id="speakWaves" class="flex gap-1 hidden">
+                                        <div class="voice-bar"></div><div class="voice-bar"></div><div class="voice-bar"></div>
+                                    </div>
+                                </div>
+                                <p id="foodStory" class="text-lg font-medium leading-relaxed italic text-slate-100">請選擇感興趣的補給食材。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="winModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] hidden items-center justify-center p-6 text-center">
+        <div class="bg-white rounded-[4rem] p-16 max-w-xl w-full shadow-2xl border-4 border-emerald-500">
+            <div class="text-9xl mb-8">🏆</div>
+            <h2 id="winTitle" class="text-5xl font-black text-slate-800 mb-4 italic">探索任務完成</h2>
+            <p id="winStats" class="text-slate-500 text-2xl font-bold mb-10"></p>
+            <button onclick="location.reload()" class="bg-emerald-500 text-white px-16 py-6 rounded-3xl font-black text-2xl shadow-lg hover:scale-110 transition">重新挑戰</button>
+        </div>
+    </div>
+
+    <script>
+        const database = {
+            '仁愛鄉': { 
+                icon: '🍄', food: '高山香菇', feature: '森林環境成長，肉質肥厚鮮甜。', carbon: '🌱 減碳 88%', allergen: '🟢 天然食材', 
+                voice: '仁愛鄉，高山香菇。吸收森林精華，營養價值極高。',
+                rich: '仁愛鄉的<span class="keyword">高山香菇</span>生長在<span class="keyword">海拔1000公尺</span>以上的原始林區，由於日夜溫差大、水氣充沛，產出的香菇菌傘肥厚、香氣濃郁。這裡採用對環境友善的<span class="keyword">段木栽培</span>，不僅保留了香菇的原始鮮味，更省去了長途進口的碳排放。香菇富含<span class="keyword">多醣體</span>與<span class="keyword">維生素D</span>，是強健身體的天然能量補給品。'
+            },
+            '國姓鄉': { 
+                icon: '☕', food: '國姓咖啡', feature: '精品豆，具有柑橘與堅果香氣。', carbon: '🌱 減碳 95%', allergen: '🟢 咖啡因注意', 
+                voice: '國姓鄉，精品咖啡。海拔適中，香氣優雅濃郁。',
+                rich: '國姓鄉是台灣重要的<span class="keyword">精品咖啡</span>產區，主要種植<span class="keyword">阿拉比卡豆</span>。由於氣候溫暖且排水良好，這裡的咖啡帶有淡淡的<span class="keyword">柑橘香氣</span>與迷人的堅果餘韻。支持國姓咖啡能直接減少空運進口產生的巨量碳排。每喝一口咖啡，都在支持在地小農對土地的<span class="keyword">永續承諾</span>，也是跑者提神醒腦的絕佳選擇。'
+            },
+            '草屯鎮': { 
+                icon: '🍡', food: '手工麻糬', feature: '糯米香Q，是在地傳承的美味。', carbon: '🌱 在地米食', allergen: '🔴 含花生糯米', 
+                voice: '草屯鎮，手工麻糬。精選優質糯米，口感彈牙飽滿。',
+                rich: '草屯麻糬傳承了數十年的製作工法，選用在地生產的優質糯米，經過多道工序揉捏而成，質地Q彈而不黏牙。內餡通常包裹著香氣四溢的花生粉或紅豆泥。雖然是跑後補充熱量的美味來源，但對<span class="keyword">花生</span>或<span class="keyword">糯米過敏</span>的小跑友一定要多加留意。在地生產的糯米大幅縮短了運送里程，是南投引以為傲的<span class="keyword">米食文化</span>。'
+            },
+            '南投市': { 
+                icon: '🍜', food: '南投意麵', feature: '傳統曬製，麵體彈牙有勁。', carbon: '🌱 在地手作', allergen: '🟡 含有小麥', 
+                voice: '南投市，特色意麵。傳統工法製作，吸附滿滿精華。',
+                rich: '南投意麵不同於一般的黃麵，麵條製作時減少了水分並經過<span class="keyword">陽光短暫曝曬</span>，使其質地紮實且具備吸附醬汁的特殊能力。這是南投市民從小到大的家鄉味，簡單拌入肉燥就是頂級美味。由於加工廠即在市區周邊，<span class="keyword">碳足跡極低</span>，是跑旅賽事後最能快速補充<span class="keyword">碳水化合物</span>的能量補給。'
+            },
+            '中寮鄉': { 
+                icon: '🍯', food: '龍眼蜂蜜', feature: '純淨採集，滴滴芬芳透亮。', carbon: '🌱 友善蜜源', allergen: '🟡 嬰兒忌食', 
+                voice: '中寮鄉，龍眼蜂蜜。生態環境豐富，口感純淨厚實。',
+                rich: '中寮鄉群山環繞，擁有廣大的龍眼林，每到花開季節，純淨的蜜源吸引了無數小蜜蜂採集。這裡的龍眼蜂蜜色澤如琥珀般剔透，口感綿密且帶有獨特的花香。蜂蜜是天然的單糖，能迅速被身體吸收利用。需注意<span class="keyword">一歲以下嬰幼兒</span>腸胃發育未全，<span class="keyword">請勿食用</span>，以確保食安。<span class="keyword">友善採蜜</span>環境也守護了當地的生物多樣性。'
+            },
+            '埔里鎮': { 
+                icon: '🥬', food: '茭白筍', feature: '質地脆嫩，美人腿美稱。', carbon: '🌱 湧泉灌溉', allergen: '🟢 高纖安全', 
+                voice: '埔里鎮，茭白筍。潔淨湧泉灌溉，質地脆甜如梨。',
+                rich: '埔里鎮擁有全台最清澈的<span class="keyword">地下湧泉</span>，孕育出外型潔白如玉、口感鮮甜多脆的茭白筍，因此被譽為「<span class="keyword">美人腿</span>」。這裡的農民利用燈光調節產期，實現全年供應。茭白筍富含<span class="keyword">膳食纖維</span>與水分，對於運動後的身體補水與代謝非常有幫助。產地直送的<span class="keyword">低里程運算</span>，讓埔里茭白筍成為綠色飲食的最佳代名詞。'
+            },
+            '魚池鄉': { 
+                icon: '🫖', food: '日月潭紅茶', feature: '具有薄荷與肉桂香氣。', carbon: '🌱 永續經營', allergen: '🟢 天然茶葉', 
+                voice: '魚池鄉，紅玉紅茶。香氣受國際肯定，是在地驕傲。',
+                rich: '日月潭魚池鄉是「<span class="keyword">紅玉紅茶</span>」(台茶18號)的故鄉。這種紅茶具有獨特的薄荷與天然肉桂香氣，茶湯呈現漂亮的<span class="keyword">紅寶石色</span>。在湖光山色中生長的茶樹，受到適宜的濕度與氣溫滋養。小農堅持<span class="keyword">手工採摘</span>與永續耕作，減少了農藥對土地的負擔。喝一口回甘紅茶，不僅消除跑後的疲勞，更能感受到南投深厚的茶文化。'
+            },
+            '名間鄉': { 
+                icon: '🍍', food: '名間鳳梨', feature: '紅土產出，酸甜比例完美。', carbon: '🌱 減碳 92%', allergen: '🟢 天然酵素', 
+                voice: '名間鄉，名間鳳梨。紅土環境生長，富含健康酵素。',
+                rich: '名間鄉的<span class="keyword">紅土高原</span>土質肥沃且透氣性佳，是鳳梨生長的理想環境。這裡產出的鳳梨果肉細緻、甜中帶微酸，且含有豐富的<span class="keyword">蛋白質分解酵素</span>。這不僅能幫助消化，還能減輕運動後的負擔。名間小農採收後即刻運送，省去了進口水果所需的冷鏈保鮮能耗。這是一顆充滿<span class="keyword">減碳意識</span>的健康補給果實。'
+            },
+            '集集鎮': { 
+                icon: '🍌', food: '集集山蕉', feature: '曾為天皇貢品，口感紮實。', carbon: '🌱 友善栽種', allergen: '🟢 安全無敏', 
+                voice: '集集鎮，山蕉。口感Q彈紮實，是理想的能量來源。',
+                rich: '集集山蕉在日治時期曾是專門進貢給<span class="keyword">日本天皇的補給品</span>，其名聲享譽海外。由於種植於山坡地，生長速度較慢，因此果肉比平地香蕉更為紮實且香氣更濃。香蕉富含<span class="keyword">鉀離子</span>，能有效預防路跑時的<span class="keyword">肌肉抽筋</span>。選擇集集山蕉，不僅能補充高品質能量，更是在守護南投重要的農業歷史遺產。'
+            },
+            '水里鄉': { 
+                icon: '梅', food: '水里脆梅', feature: '手工釀造，生津止渴。', carbon: '🌱 古法煉製', allergen: '🟢 天然果實', 
+                voice: '水里鄉，脆梅。手工古法製作，有效消除身體疲勞。',
+                rich: '水里鄉以生產優質青梅聞名，每到清明前後，小農便開始手工採收並以古法醃漬。脆梅的製作工序繁雜，必須經過敲製、鹽漬與糖漬，才能呈現那酸甜清爽的口感。梅子中的<span class="keyword">有機酸</span>能幫助<span class="keyword">分解體內的乳酸</span>，有效消除運動後的疲勞感。在地古法釀造無添加化學色素，是跑友們恢復活力的綠色良藥。'
+            },
+            '鹿谷鄉': { 
+                icon: '🍵', food: '凍頂烏龍', feature: '雲霧滋養，焙火回甘。', carbon: '🌱 產銷低碳', allergen: '🟢 天然茶葉', 
+                voice: '鹿谷鄉，凍頂茶。氣候涼爽精心烘焙，喉韻持久深遠。',
+                rich: '鹿谷<span class="keyword">凍頂烏龍茶</span>是台灣最具代表性的焙火茶。茶葉產自終年雲霧繚繞的凍頂山區，經過製茶師傅精心的發酵與<span class="keyword">炭火慢焙</span>，呈現出獨特的「<span class="keyword">喉韻</span>」與熟果香氣。在南投路跑的終點喝上一杯暖茶，身心靈都能得到全然的放鬆。產銷合一的<span class="keyword">低碳路徑</span>，確保了環境永續性。'
+            },
+            '竹山鎮': { 
+                icon: '🍠', food: '紅土地瓜', feature: '紅土孕育，質地綿密。', carbon: '🌱 減碳 96%', allergen: '🟢 優質澱粉', 
+                voice: '竹山鎮，紅土地瓜。口感綿密極甜，是在地減碳代表。',
+                rich: '竹山鎮特有的<span class="keyword">紅色黏質土壤</span>富含豐富礦物質，讓這裡的地瓜質地格外綿密且甜度極高。<span class="keyword">紅土地瓜</span>富含優質<span class="keyword">膳食纖維</span>、維生素A與類胡蘿蔔素，是完美的<span class="keyword">低GI澱粉</span>補給來源。這顆地瓜從田間到餐桌僅有不到30公里的距離，碳足跡微乎其微。讓我們一起支持最永續的南投美味！'
+            },
+            '信義鄉': { 
+                icon: '🍇', food: '巨峰葡萄', feature: '高海拔冷涼孕育，飽滿多汁。', carbon: '🌱 高海拔鮮採', allergen: '🟢 天然果實', 
+                voice: '信義鄉，巨峰葡萄。飽滿如黑寶石，連皮食用營養最高。',
+                rich: '信義鄉位於玉山腳下，高海拔的低溫與純淨溪水，孕育出像<span class="keyword">黑寶石</span>般的巨峰葡萄。這裡的葡萄果實飽滿、果粉濃厚。葡萄皮含有豐富的<span class="keyword">花青素</span>與<span class="keyword">白藜蘆醇</span>，建議洗淨後<span class="keyword">連皮食用</span>以攝取最高抗氧化營養。高海拔鮮採直送，免除了進口冷鏈的浪費，是愛運動、愛環保的最佳水果選擇。'
+            }
+        };
+
+        let state = {
+            red: { steps: 0, count: 0 },
+            green: { steps: 0, count: 0 },
+            occupied: {}, 
+            activeTeam: null, 
+            total: 0,
+            gameOver: false,
+            targetGoal: 13 
+        };
+
+        let currentUtterance = null;
+
+        function startGame(goal) {
+            state.targetGoal = goal;
+            document.getElementById('goal-label').innerText = goal;
+            document.getElementById('mode-label').innerText = goal === 7 ? 'Discovery Progress (Half Marathon Mode)' : 'Discovery Progress (Full Marathon Mode)';
+            document.getElementById('startModal').classList.add('hidden');
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score-red').innerText = state.red.count;
+            document.getElementById('score-green').innerText = state.green.count;
+            document.getElementById('total-progress').innerText = state.total;
+        }
+
+        function addStep(team) {
+            if (state.activeTeam || state.gameOver) return; 
+            state[team].steps++;
+            updatePlayerUI(team);
+            if (state[team].steps >= 10) {
+                state.activeTeam = team;
+                triggerTask(team);
+            }
+        }
+
+        function triggerTask(team) {
+            document.getElementById('infoPanel').classList.remove('hidden');
+            document.getElementById(`card-${team}`).classList.add('active-task-area');
+            const msg = `請選擇補給食材。`;
+            document.getElementById('foodStory').innerText = msg;
+            
+            const prevTeam = state.activeTeam;
+            state.activeTeam = 'speaking';
+            
+            speak(msg, () => {
+                state.activeTeam = prevTeam;
+                updatePlayerUI('red');
+                updatePlayerUI('green');
+                document.querySelectorAll('.township-path').forEach(p => {
+                    const town = p.id.replace('town-', '');
+                    if (!state.occupied[town]) p.classList.add('selectable');
+                });
+            });
+            window.scrollTo({ top: 150, behavior: 'smooth' });
+        }
+
+        function handleMapClick(townName) {
+            if (state.activeTeam === 'speaking' || !state.activeTeam || state.gameOver) return;
+            if (state.occupied[townName]) return;
+
+            const currentTeam = state.activeTeam;
+            const data = database[townName];
+
+            state.activeTeam = 'speaking'; 
+            state.occupied[townName] = currentTeam;
+            state[currentTeam].count++;
+            state.total++;
+            document.getElementById('nantouMap').classList.add('pointer-none');
+            
+            state.red.steps = 0;
+            state.green.steps = 0;
+
+            updateScoreUI();
+            updateFoodPanel(townName, data);
+            
+            const path = document.getElementById(`town-${townName}`);
+            path.classList.add(currentTeam === 'red' ? 'occupied-red' : 'occupied-green');
+            path.classList.remove('selectable');
+
+            speak(data.voice, () => {
+                setTimeout(() => {
+                    state.activeTeam = null; 
+                    document.getElementById('card-red').classList.remove('active-task-area');
+                    document.getElementById('card-green').classList.remove('active-task-area');
+                    document.getElementById('infoPanel').classList.add('hidden');
+                    document.getElementById('nantouMap').classList.remove('pointer-none');
+
+                    updatePlayerUI('red');
+                    updatePlayerUI('green');
+
+                    if (state.total >= state.targetGoal) {
+                        state.gameOver = true;
+                        endGame();
+                    }
+                }, 1500); 
+            });
+        }
+
+        function updateFoodPanel(name, d) {
+            document.getElementById('foodImg').innerText = d.icon;
+            document.getElementById('foodName').innerText = name + '：' + d.food;
+            document.getElementById('foodFeature').innerText = d.feature;
+            document.getElementById('foodCarbon').innerText = d.carbon;
+            document.getElementById('foodAllergen').innerText = d.allergen;
+            document.getElementById('foodStory').innerText = d.voice;
+            // 這裡改用 innerHTML 以支援關鍵字高亮標籤
+            document.getElementById('foodRichText').innerHTML = d.rich;
+
+            const box = document.getElementById('allergenBox');
+            if(d.allergen.includes('🔴')) box.className = "bg-red-50 p-6 rounded-3xl border-2 border-red-100 shadow-sm";
+            else if(d.allergen.includes('🟡')) box.className = "bg-yellow-50 p-6 rounded-3xl border-2 border-yellow-100 shadow-sm";
+            else box.className = "bg-green-50 p-6 rounded-3xl border-2 border-green-100 shadow-sm";
+        }
+
+        function updatePlayerUI(team) {
+            const steps = state[team].steps;
+            document.getElementById(`steps-${team}`).innerText = steps;
+            const bar = document.getElementById(`bar-${team}`);
+            bar.style.width = `${(steps / 10) * 100}%`;
+            
+            const avatar = document.getElementById(`avatar-${team}`);
+            if (steps > 0 && !state.activeTeam) avatar.classList.add('running');
+            else avatar.classList.remove('running');
+            
+            document.getElementById(`btn-${team}`).disabled = !!state.activeTeam || state.gameOver;
+        }
+
+        function speak(text, onEnd) {
+            window.speechSynthesis.cancel();
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.lang = 'zh-TW';
+            currentUtterance.pitch = 1.0; 
+            currentUtterance.rate = 1.1; 
+            const waves = document.getElementById('speakWaves');
+            currentUtterance.onstart = () => waves.classList.remove('hidden');
+            currentUtterance.onend = () => {
+                waves.classList.add('hidden');
+                if (onEnd) onEnd();
+            };
+            currentUtterance.onerror = () => {
+                waves.classList.add('hidden');
+                if (onEnd) onEnd();
+            };
+            window.speechSynthesis.speak(currentUtterance);
+        }
+
+        function endGame() {
+            const red = state.red.count;
+            const green = state.green.count;
+            const winner = red > green ? '紅隊' : '綠隊';
+            document.getElementById('winTitle').innerText = `探索任務完成`;
+            document.getElementById('winStats').innerText = `紅隊：${red} | 綠隊：${green}`;
+            document.getElementById('winModal').classList.remove('hidden');
+            document.getElementById('winModal').classList.add('flex');
+            speak(`探索任務結束。本次獲勝者為${winner}。感謝參與。`);
+        }
+    </script>
+</body>
+</html>
