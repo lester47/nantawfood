@@ -1,0 +1,25 @@
+{
+  "name": "南投食農小大使",
+  "short_name": "食農領地戰",
+  "description": "南投食農領地戰 PWA 可安裝版，支援離線展示與跨裝置部署。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff7e6",
+  "theme_color": "#2f855a",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
