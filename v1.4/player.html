@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2f855a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>南投食農領地戰｜v1.3 手機體感控制器</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    :root { --red:#ef4444; --green:#16a34a; --ink:#263527; --paper:#fffdf4; --gold:#f59e0b; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif; background: radial-gradient(circle at 20% 0%, rgba(255,224,128,.75), transparent 35%), linear-gradient(135deg,#f8f1dc,#eff7e5 58%,#eaf6ff); color:var(--ink); display:flex; align-items:center; justify-content:center; padding:18px; }
+    .app { width:min(520px,100%); }
+    .card { background:rgba(255,253,244,.96); border:1px solid #e7dcc2; border-radius:32px; padding:22px; box-shadow:0 18px 42px rgba(75,59,29,.18); }
+    h1 { margin:0 0 6px; font-size:28px; letter-spacing:-.04em; }
+    .sub { color:#6b7a65; font-weight:900; margin-bottom:16px; }
+    .status-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0; }
+    .pill { border-radius:999px; padding:10px 12px; font-weight:1000; background:#f4ead1; font-size:13px; text-align:center; }
+    .pill.ok { background:#dcfce7; color:#166534; }
+    .pill.bad { background:#fee2e2; color:#991b1b; }
+    label { display:block; text-align:left; font-weight:1000; margin:14px 0 6px; }
+    input { width:100%; border:2px solid #e7dcc2; border-radius:18px; padding:14px; font-size:22px; text-align:center; font-weight:1000; text-transform:uppercase; background:white; }
+    .teams { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0; }
+    button { border:0; border-radius:22px; padding:16px; font-size:18px; font-weight:1000; cursor:pointer; font-family:inherit; box-shadow:0 12px 24px rgba(0,0,0,.12); }
+    .red { background:var(--red); color:white; }
+    .green { background:var(--green); color:white; }
+    .team.active { outline:5px solid #facc15; transform:scale(1.02); }
+    .main-btn { width:100%; background:#263527; color:white; margin-top:10px; }
+    .manual { background:var(--gold); color:white; width:100%; margin-top:10px; }
+    .stop { background:#64748b; color:white; width:100%; margin-top:10px; }
+    .counter { margin:18px 0; text-align:center; }
+    .counter strong { font-size:72px; line-height:1; display:block; }
+    .counter span { color:#6b7a65; font-weight:900; }
+    .bar { height:16px; background:#e9edf0; border-radius:999px; overflow:hidden; margin-top:10px; }
+    .bar i { display:block; height:100%; width:0%; background:linear-gradient(90deg,#f59e0b,#22c55e); transition:.18s; }
+    .hint { background:#f6f4e9; border:1px solid #e7dcc2; border-radius:20px; padding:14px; line-height:1.65; font-weight:800; color:#4b5a47; margin-top:14px; text-align:left; }
+    .small { font-size:12px; color:#6b7a65; font-weight:800; margin-top:10px; line-height:1.55; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <h1>📱 手機體感控制器</h1>
+      <div class="sub">v1.3 Room ID 房間制｜MQTTGO.io</div>
+      <div class="status-grid">
+        <div id="mqttStatus" class="pill bad">MQTT 連線中</div>
+        <div id="sensorStatus" class="pill bad">感測器未啟動</div>
+      </div>
+      <label for="roomInput">房間代碼 Room ID</label>
+      <input id="roomInput" maxlength="6" placeholder="例如 A7K2" />
+      <div class="teams">
+        <button id="redBtn" class="team red active" type="button">🔴 紅隊</button>
+        <button id="greenBtn" class="team green" type="button">🟢 綠隊</button>
+      </div>
+      <button id="startBtn" class="main-btn" type="button">開始體感</button>
+      <button id="manualBtn" class="manual" type="button">手動送出一步</button>
+      <button id="stopBtn" class="stop" type="button">停止體感</button>
+      <div class="counter">
+        <strong id="stepCount">0</strong>
+        <span>本手機已送出步數</span>
+        <div class="bar"><i id="stepBar"></i></div>
+      </div>
+      <div class="hint">操作方式：確認房間代碼與主畫面相同，選擇紅隊或綠隊，按「開始體感」後原地跑步或晃動手機。若現場測試感測器不穩，可用「手動送出一步」確認 MQTT 是否有通。</div>
+      <div id="debugText" class="small">等待操作。</div>
+    </section>
+  </main>
+  <script>
+    const MQTT_SERVER = "wss://MQTTGO.io:8084/mqtt";
+    const TOPIC_BASE = "nantou-food-race";
+    let client = null;
+    let team = "red";
+    let roomId = "";
+    let totalSteps = 0;
+    let running = false;
+    let lastStepAt = 0;
+    const THRESHOLD = 25;
+    const COOLDOWN_MS = 420;
+    const $ = id => document.getElementById(id);
+    function normalizeRoomId(value) { return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); }
+    function initRoomId() { const params = new URLSearchParams(location.search); const fromUrl = normalizeRoomId(params.get("room")); const saved = normalizeRoomId(localStorage.getItem("nantou-food-room-id")); roomId = fromUrl || saved || "A7K2"; localStorage.setItem("nantou-food-room-id", roomId); $("roomInput").value = roomId; }
+    function setMqttStatus(text, ok) { const el = $("mqttStatus"); el.textContent = text; el.classList.toggle("ok", !!ok); el.classList.toggle("bad", !ok); }
+    function setSensorStatus(text, ok) { const el = $("sensorStatus"); el.textContent = text; el.classList.toggle("ok", !!ok); el.classList.toggle("bad", !ok); }
+    function debug(text) { $("debugText").textContent = text; console.log("[v1.3 player]", text); }
+    function setTeam(nextTeam) { team = nextTeam; $("redBtn").classList.toggle("active", team === "red"); $("greenBtn").classList.toggle("active", team === "green"); debug(`目前隊伍：${team === "red" ? "紅隊" : "綠隊"}`); }
+    function getTopic() { roomId = normalizeRoomId($("roomInput").value) || "A7K2"; localStorage.setItem("nantou-food-room-id", roomId); $("roomInput").value = roomId; return `${TOPIC_BASE}/${roomId}/${team}`; }
+    function updateCounter() { $("stepCount").textContent = totalSteps; $("stepBar").style.width = `${Math.min(100, (totalSteps % 10) * 10)}%`; }
+    function sendStep() { if (!client || !client.connected) { debug("MQTT 尚未連線，無法送出步數。請等候或重新整理。"); return; } const payload = { roomId: normalizeRoomId($("roomInput").value) || "A7K2", team, playerId: `mobile-${team}`, steps: 1, totalSteps: totalSteps + 1, timestamp: Date.now(), mode: "mobile" }; client.publish(getTopic(), JSON.stringify(payload)); totalSteps++; updateCounter(); if (navigator.vibrate) navigator.vibrate(45); debug(`已送出：房間 ${payload.roomId}｜${team === "red" ? "紅隊" : "綠隊"} +1`); }
+    function initMqtt() { if (typeof mqtt === "undefined") { setMqttStatus("MQTT 套件未載入", false); debug("mqtt.js 未載入，請確認網路。"); return; } const clientId = `nantou-player-${Math.random().toString(16).slice(2)}`; client = mqtt.connect(MQTT_SERVER, { clientId, clean: true, reconnectPeriod: 2000, connectTimeout: 8000 }); client.on("connect", () => { setMqttStatus("MQTT 已連線", true); debug(`已連線 MQTTGO.io，房間：${roomId}`); }); client.on("reconnect", () => setMqttStatus("MQTT 重連中", false)); client.on("offline", () => setMqttStatus("MQTT 離線", false)); client.on("error", err => { setMqttStatus("MQTT 錯誤", false); console.warn(err); }); }
+    async function requestMotionPermissionIfNeeded() { if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") { const permission = await DeviceMotionEvent.requestPermission(); return permission === "granted"; } return true; }
+    async function startSensor() { const allowed = await requestMotionPermissionIfNeeded().catch(() => false); if (!allowed) { setSensorStatus("感測器未授權", false); alert("需要允許手機動作感測器，才能使用體感控制。可以先用手動送出一步測試 MQTT。"); return; } running = true; window.removeEventListener("devicemotion", handleMotion); window.addEventListener("devicemotion", handleMotion); setSensorStatus("感測器已啟動", true); debug("感測器已啟動，請原地跑步或晃動手機。"); }
+    function stopSensor() { running = false; window.removeEventListener("devicemotion", handleMotion); setSensorStatus("感測器已停止", false); debug("已停止體感。"); }
+    function handleMotion(event) { if (!running) return; const acc = event.accelerationIncludingGravity; if (!acc) return; const total = Math.abs(acc.x || 0) + Math.abs(acc.y || 0) + Math.abs(acc.z || 0); const now = Date.now(); if (total > THRESHOLD && now - lastStepAt > COOLDOWN_MS) { lastStepAt = now; sendStep(); } }
+    $("redBtn").onclick = () => setTeam("red"); $("greenBtn").onclick = () => setTeam("green"); $("startBtn").onclick = startSensor; $("stopBtn").onclick = stopSensor; $("manualBtn").onclick = sendStep; $("roomInput").addEventListener("input", () => { $("roomInput").value = normalizeRoomId($("roomInput").value); roomId = $("roomInput").value || "A7K2"; localStorage.setItem("nantou-food-room-id", roomId); debug(`目前房間：${roomId}`); });
+    initRoomId(); updateCounter(); initMqtt();
+  </script>
+</body>
+</html>
