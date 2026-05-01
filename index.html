@@ -811,10 +811,11 @@
         <div id="mqttStatus" class="pwa-pill offline">MQTT 尚未連線</div>
         <div id="roomStatus" class="pwa-pill">房間：讀取中</div>
         <a id="playerLink" class="install-btn show" href="./player.html" target="_blank" style="text-decoration:none;display:inline-block;">📱 手機體感控制器</a>
+        <a id="leaderboardLink" class="install-btn show" href="./leaderboard.html" target="_blank" style="text-decoration:none;display:inline-block;">🏆 多組排行榜</a>
         <button id="newRoomBtn" class="install-btn show">🎲 建立新房間</button>
         <button id="copyPlayerBtn" class="install-btn show">🔗 複製玩家網址</button>
         <button id="installPwaBtn" class="install-btn">📲 安裝到主畫面</button>
-        <div class="status-pill">v1.3｜Room ID 房間制 × MQTTGO｜保留手動備援</div>
+        <div class="status-pill">v1.4｜Room ID × 多組排行榜 × MQTTGO｜保留手動備援</div>
       </div>
     </div>
   </header>
@@ -1220,6 +1221,7 @@
       d3.selectAll(".town").classed("ready", false);
 
       updateScore();
+      publishRoomSummary("playing");
       showInfo(town);
       $("storyText").textContent = `${team === "red" ? "紅隊" : "綠隊"}成功攻佔 ${town}！現在進入食材介紹。${data.story}`;
       debug(`${team === "red" ? "紅隊" : "綠隊"}成功攻佔 ${town}，目前佔領數已更新，準備播放食材介紹`);
@@ -1304,6 +1306,7 @@
       debug(`${town} 食材介紹結束，兩隊步數歸零，進入下一回合`);
 
       updateUI();
+      publishRoomSummary("playing");
       checkWin();
     }
 
@@ -1365,6 +1368,7 @@
       if (score.total < state.goal) return;
 
       state.gameOver = true;
+      publishRoomSummary("finished");
 
       let title = "";
       let text = `紅隊佔領 ${score.red} 個鄉鎮，綠隊佔領 ${score.green} 個鄉鎮。`;
@@ -1528,7 +1532,8 @@
       return {
         red: `${MQTT_CONFIG.topicBase}/${roomId}/red`,
         green: `${MQTT_CONFIG.topicBase}/${roomId}/green`,
-        summary: `${MQTT_CONFIG.topicBase}/${roomId}/summary`
+        summary: `${MQTT_CONFIG.topicBase}/${roomId}/summary`,
+        leaderboard: `${MQTT_CONFIG.topicBase}/leaderboard/update`
       };
     }
 
@@ -1561,6 +1566,31 @@
 
       addStep(incomingTeam);
       debug(`收到房間 ${activeRoomId} 手機體感步伐：${incomingTeam === "red" ? "紅隊" : "綠隊"}`);
+    }
+
+
+    // ===== v1.4 多組排行榜：把本房間摘要廣播出去 =====
+    function publishRoomSummary(status = "playing") {
+      if (!mqttClient || !mqttClient.connected || !activeRoomId) return;
+      const score = updateScore();
+      const topics = getRoomTopics();
+      const payload = {
+        version: "v1.4",
+        roomId: activeRoomId,
+        groupName: `房間 ${activeRoomId}`,
+        redTerritory: score.red,
+        greenTerritory: score.green,
+        totalTerritory: score.total,
+        redSteps: state.redSteps,
+        greenSteps: state.greenSteps,
+        goal: state.goal,
+        totalScore: score.total * 10,
+        status: state.gameOver ? "finished" : status,
+        timestamp: Date.now()
+      };
+      const text = JSON.stringify(payload);
+      mqttClient.publish(topics.summary, text, { retain: true });
+      mqttClient.publish(topics.leaderboard, text, { retain: false });
     }
 
     function initRoomControls() {
@@ -1615,6 +1645,7 @@
             console.warn("[MQTT] 訂閱失敗", err);
           } else {
             console.log("[MQTT] 已訂閱 Room Topic", topics);
+            publishRoomSummary("waiting");
           }
         });
       });
