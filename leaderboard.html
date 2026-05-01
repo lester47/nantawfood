@@ -15,11 +15,9 @@
   </style>
 </head>
 <body>
-  <header><div class="head"><div class="brand"><div class="logo">🏆</div><div><h1>南投食農領地戰｜多組排行榜</h1><div class="sub">v1.4 Room ID 即時競賽總覽｜MQTTGO.io</div></div></div><div id="mqttStatus" class="pill offline">MQTT 連線中</div></div></header>
+  <header><div class="head"><div class="brand"><div class="logo">🏆</div><div><h1>南投食農領地戰｜多組排行榜</h1><div class="sub">v1.4.2 教學現場專用版｜自動顯示全部小組</div></div></div><div id="mqttStatus" class="pill offline">MQTT 連線中</div></div></header>
   <main class="wrap">
     <div class="toolbar">
-      <input id="filterInput" placeholder="輸入房號篩選，例如 A7K2；空白顯示全部" />
-      <button id="clearBtn">清空畫面資料</button>
       <a class="link" href="./index.html">回主畫面</a>
     </div>
     <section class="cards">
@@ -28,10 +26,10 @@
       <div class="stat"><b>最後更新</b><strong id="lastUpdate" style="font-size:24px">--:--:--</strong></div>
     </section>
     <section class="board">
-      <div class="board-head"><div>排名</div><div>房間</div><div>紅隊</div><div>綠隊</div><div>總佔領</div><div>總分</div><div>狀態</div></div>
-      <div id="boardBody"><div class="empty">等待各房間送出比賽摘要資料...</div></div>
+      <div class="board-head"><div>排名</div><div>小組</div><div>紅隊</div><div>綠隊</div><div>總佔領</div><div>總分</div><div>狀態</div></div>
+      <div id="boardBody"><div class="empty">等待各小組送出比賽摘要資料...</div></div>
     </section>
-    <div class="small">訂閱 Topic：nantou-food-race/+/summary 與 nantou-food-race/leaderboard/update。若沒有資料，請先讓某一房間完成一次攻佔。</div>
+    <div class="small">訂閱 Topic：nantou-food-race/+/summary 與 nantou-food-race/leaderboard/update。若沒有資料，請先讓某一小組完成一次攻佔。</div>
   </main>
 <script>
 const MQTT_SERVER = "wss://MQTTGO.io:8084/mqtt";
@@ -50,15 +48,13 @@ function ingest(payloadText){
   render();
 }
 function render(){
-  const filter = normalizeRoomId($("filterInput").value);
   let list = Array.from(rooms.values());
-  if(filter) list = list.filter(r => r.roomId.includes(filter));
   list.sort((a,b) => (b.totalScore||0)-(a.totalScore||0) || (b.totalTerritory||0)-(a.totalTerritory||0) || (b.timestamp||0)-(a.timestamp||0));
   $("roomCount").textContent = rooms.size;
   $("topScore").textContent = list[0]?.totalScore || 0;
   $("lastUpdate").textContent = rooms.size ? fmtTime(Math.max(...Array.from(rooms.values()).map(r=>r.timestamp||0))) : "--:--:--";
   const body=$("boardBody");
-  if(!list.length){ body.innerHTML = '<div class="empty">目前沒有符合條件的房間資料</div>'; return; }
+  if(!list.length){ body.innerHTML = '<div class="empty">目前還沒有任何小組資料</div>'; return; }
   body.innerHTML = list.map((r,i)=>{
     const rankClass = i===0?'r1':i===1?'r2':i===2?'r3':'';
     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
@@ -69,7 +65,7 @@ function render(){
     const statusText = status==='finished'?'完成':status==='waiting'?'等待中':'進行中';
     return `<div class="row">
       <div class="rank ${rankClass}" data-label="排名">${medal}</div>
-      <div data-label="房間"><b>${r.groupName || '房間 '+r.roomId}</b><div class="small">${r.roomId}｜更新 ${fmtTime(r.timestamp)}</div></div>
+      <div data-label="小組"><b>${r.groupName || '小組 '+r.roomId}</b><div class="small">${r.roomId}｜更新 ${fmtTime(r.timestamp)}</div></div>
       <div data-label="紅隊">🔴 ${r.redTerritory||0}<div class="small">步數 ${r.redSteps||0}</div></div>
       <div data-label="綠隊">🟢 ${r.greenTerritory||0}<div class="small">步數 ${r.greenSteps||0}</div></div>
       <div data-label="總佔領">${total} / ${r.goal||13}<div class="bar"><i style="width:${percent}%"></i></div></div>
@@ -78,8 +74,6 @@ function render(){
     </div>`;
   }).join('');
 }
-$("filterInput").addEventListener("input", render);
-$("clearBtn").onclick = () => { rooms.clear(); render(); };
 function initMqtt(){
   if(typeof mqtt === "undefined"){ setMqttStatus("MQTT 套件未載入", false); return; }
   const client = mqtt.connect(MQTT_SERVER, { clientId: 'nantou-leaderboard-'+Math.random().toString(16).slice(2), clean:true, reconnectPeriod:2000, connectTimeout:8000 });
