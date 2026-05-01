@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教師控制台｜南投食農領地戰 v1.5</title>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<style>
+body{margin:0;font-family:"Microsoft JhengHei",system-ui,sans-serif;background:linear-gradient(135deg,#fff3bf,#e8f7ec);color:#203521}header{background:#263527;color:white;padding:24px}.wrap{max-width:980px;margin:auto;padding:24px}.card{background:#fffdf4;border:1px solid #e7dcc2;border-radius:28px;padding:24px;margin:18px 0;box-shadow:0 14px 36px #0002}h1,h2{margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}button{border:0;border-radius:18px;padding:18px;font-size:20px;font-weight:900;color:white;cursor:pointer}.start{background:#16a34a}.pause{background:#f59e0b}.resume{background:#2563eb}.end{background:#7f1d1d}.reset{background:#dc2626}.dark{background:#263527}.purple{background:#6d28d9}textarea,input{width:100%;box-sizing:border-box;border:1px solid #d8c9a6;border-radius:16px;padding:14px;font-size:18px;font-weight:800}textarea{min-height:120px}.pill{display:inline-block;background:#ffffff22;border-radius:999px;padding:10px 16px;font-weight:900}.log{background:#1f2937;color:#d1fae5;border-radius:18px;padding:16px;height:180px;overflow:auto;font-family:Consolas,monospace}@media(max-width:720px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>🧑‍🏫 教師控制台</h1><div class="pill" id="mqttStatus">MQTT 連線中</div><p>v1.5｜小組競賽主控：開始、暫停、繼續、結束、公告、全場歸零</p></header>
+<main class="wrap">
+<section class="card"><h2>全班控制</h2><div class="grid"><button class="start" onclick="sendControl('start')">▶ 全班開始</button><button class="pause" onclick="sendControl('pause')">⏸ 全班暫停</button><button class="resume" onclick="sendControl('resume')">⏯ 全班繼續</button><button class="end" onclick="sendControl('end')">⛔ 全班結束</button></div><button class="reset" style="width:100%;margin-top:14px" onclick="resetAll()">🧹 全場歸零</button></section>
+<section class="card"><h2>全班公告</h2><textarea id="msg" placeholder="例如：剩下30秒，請準備攻佔下一個鄉鎮！"></textarea><button class="purple" style="width:100%;margin-top:14px" onclick="sendMessage()">📣 發送公告</button></section>
+<section class="card"><h2>快速連結</h2><input id="groupInput" placeholder="輸入小組代碼，例如 A7K2"><div class="grid" style="margin-top:14px"><button class="dark" onclick="openMain()">開小組主畫面</button><button class="dark" onclick="copyPlayer()">複製玩家網址</button><button class="dark" onclick="location.href='leaderboard.html'">小組排行榜</button><button class="dark" onclick="location.href='index.html'">回主畫面</button></div></section>
+<section class="card"><h2>控制紀錄</h2><div id="log" class="log"></div></section>
+</main>
+<script>
+const MQTT_URL="wss://MQTTGO.io:8084/mqtt",BASE="nantou-food-race",CONTROL=`${BASE}/control/all`;let client=null;const $=id=>document.getElementById(id);function log(t){$("log").innerHTML=`[${new Date().toLocaleTimeString('zh-TW',{hour12:false})}] ${t}<br>`+$("log").innerHTML}client=mqtt.connect(MQTT_URL,{clientId:"teacher-"+Math.random().toString(16).slice(2),clean:true,reconnectPeriod:2000});client.on("connect",()=>{$("mqttStatus").textContent="MQTT 已連線｜教師主控中";log("MQTT 已連線")});client.on("reconnect",()=>{$("mqttStatus").textContent="MQTT 重連中"});function pub(p){if(!client||!client.connected){alert("MQTT尚未連線");return}client.publish(CONTROL,JSON.stringify({...p,target:"all",timestamp:Date.now(),source:"teacher",version:"v1.5"}));log("送出："+p.action)}function sendControl(a){pub({action:a})}function resetAll(){if(confirm("確定要全場歸零嗎？"))pub({action:"resetAll"})}function sendMessage(){pub({action:"message",text:$("msg").value.trim()||"請注意教師指令。"})}function group(){return $("groupInput").value.trim().toUpperCase()||Math.random().toString(36).slice(2,6).toUpperCase()}function openMain(){location.href=`index.html?room=${group()}`}async function copyPlayer(){const u=`${location.origin}${location.pathname.replace('teacher.html','')}player.html?room=${group()}`;try{await navigator.clipboard.writeText(u);alert('已複製：\n'+u)}catch(e){prompt('請複製',u)}}
+</script>
+</body>
+</html>
