@@ -1,24 +1,1864 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<title>v1.7 主畫面</title>
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>南投食農小大使｜食農領地戰 v1.7 全場歸零版</title>
+  <meta name="theme-color" content="#2f855a" />
+  <meta name="description" content="南投食農領地戰 PWA 可安裝版，結合紅綠隊競賽、南投13鄉鎮食農地圖與離線展示。" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="食農領地戰" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    :root {
+      --red: #ef4444;
+      --green: #16a34a;
+      --gold: #f59e0b;
+      --ink: #263527;
+      --muted: #6b7a65;
+      --paper: #fffdf4;
+      --line: #e7dcc2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(255, 224, 128, .72), transparent 36%),
+        linear-gradient(135deg, #f8f1dc, #eff7e5 55%, #eaf6ff);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    header {
+      background: rgba(38, 53, 39, .94);
+      color: white;
+      padding: 16px 26px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.18);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-inner {
+      max-width: 1280px;
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #f59e0b, #22c55e);
+      font-size: 28px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 25px;
+      font-weight: 1000;
+      letter-spacing: -.04em;
+    }
+
+    .subtitle {
+      margin-top: 3px;
+      color: #d8f3dc;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .12em;
+    }
+
+    .status-pill {
+      background: rgba(255,255,255,.12);
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .pwa-tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pwa-pill {
+      background: rgba(255,255,255,.12);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 900;
+      border: 1px solid rgba(255,255,255,.16);
+    }
+
+    .pwa-pill.offline {
+      background: rgba(245,158,11,.22);
+      color: #fffbeb;
+      border-color: rgba(251,191,36,.5);
+    }
+
+    .install-btn {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: #f59e0b;
+      color: white;
+      font-size: 13px;
+      box-shadow: 0 10px 22px rgba(245,158,11,.25);
+    }
+
+    .install-btn.show {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+
+    .app {
+      max-width: 1280px;
+      margin: auto;
+      padding: 26px 24px 56px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(330px, .65fr);
+      gap: 24px;
+    }
+
+    .card {
+      background: rgba(255,253,244,.94);
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      box-shadow: 0 20px 42px rgba(75,59,29,.15);
+      overflow: hidden;
+    }
+
+    .map-card {
+      padding: 18px;
+    }
+
+    .map-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 4px 6px 16px;
+    }
+
+    .map-head h2 {
+      margin: 0;
+      font-size: 30px;
+      color: #315a24;
+      font-weight: 1000;
+      letter-spacing: -.04em;
+    }
+
+    .map-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .mode-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button {
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      font-weight: 1000;
+      transition: .18s;
+    }
+
+    .mode-btn {
+      padding: 10px 15px;
+      border-radius: 18px;
+      background: #fff7df;
+      color: #7c4a00;
+      border: 2px solid #f4d481;
+    }
+
+    .mode-btn.active {
+      background: var(--gold);
+      color: white;
+      border-color: var(--gold);
+    }
+
+    .map-wrap {
+      position: relative;
+      min-height: 680px;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 2px solid #e2d8be;
+      background:
+        radial-gradient(circle at 50% 36%, rgba(255,255,255,.97), rgba(255,253,244,.75) 43%, rgba(232,246,222,.86)),
+        linear-gradient(180deg, #fef7dd, #ecf8e8);
+    }
+
+    svg {
+      width: 100%;
+      height: 680px;
+      display: block;
+    }
+
+    .loader {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(255,253,244,.82);
+      z-index: 5;
+    }
+
+    .loader-box {
+      background: white;
+      border-radius: 26px;
+      padding: 22px 28px;
+      box-shadow: 0 16px 34px rgba(0,0,0,.12);
+      color: #315a24;
+      font-weight: 1000;
+      text-align: center;
+    }
+
+    .select-banner {
+      position: absolute;
+      right: 22px;
+      top: 22px;
+      display: none;
+      z-index: 4;
+      background: var(--gold);
+      color: white;
+      border-radius: 20px;
+      padding: 14px 18px;
+      font-weight: 1000;
+      box-shadow: 0 14px 30px rgba(245,158,11,.35);
+    }
+
+    .select-banner.show {
+      display: block;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    .town {
+      fill: url(#neutralLand);
+      stroke: #fffaf0;
+      stroke-width: 1.5;
+      cursor: pointer;
+      transition: .18s;
+      filter: drop-shadow(3px 5px 4px rgba(70,55,30,.22));
+      pointer-events: visiblePainted;
+    }
+
+    .town:hover {
+      fill: #ffe08a;
+      stroke: #f59e0b;
+      stroke-width: 3;
+      filter: drop-shadow(4px 8px 7px rgba(70,55,30,.28));
+    }
+
+    .town.ready {
+      stroke: #f59e0b;
+      stroke-width: 3;
+      filter: drop-shadow(0 0 10px rgba(245,158,11,.6));
+    }
+
+    .town.red {
+      fill: url(#redLand);
+      stroke: #b91c1c;
+      stroke-width: 2;
+    }
+
+    .town.green {
+      fill: url(#greenLand);
+      stroke: #047857;
+      stroke-width: 2;
+    }
+
+    .town.selected {
+      stroke: #263527;
+      stroke-width: 4;
+    }
+
+    .town-label {
+      font-size: 14px;
+      font-weight: 1000;
+      fill: #263527;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 5px;
+      pointer-events: none;
+      letter-spacing: -.04em;
+    }
+
+    .town-code {
+      font-size: 10px;
+      font-weight: 900;
+      fill: #66735c;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 4px;
+      pointer-events: none;
+    }
+
+    .lake {
+      fill: url(#lakeGrad);
+      stroke: #ffffff;
+      stroke-width: 2;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 5px rgba(0,0,0,.18));
+    }
+
+    .lake-label {
+      pointer-events: none;
+      text-anchor: middle;
+      font-size: 12px;
+      font-weight: 1000;
+      fill: #075985;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 4px;
+    }
+
+    .map-caption {
+      position: absolute;
+      left: 24px;
+      bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,.76);
+      border: 1px solid var(--line);
+      padding: 12px 16px;
+      border-radius: 22px;
+      pointer-events: none;
+      box-shadow: 0 12px 24px rgba(0,0,0,.08);
+    }
+
+    .map-caption b { font-size: 18px; }
+    .map-caption span { font-size: 12px; color: var(--muted); font-weight: 900; }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .panel, .info, .runner {
+      padding: 20px;
+    }
+
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 26px;
+      font-weight: 1000;
+    }
+
+    .scores {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .score-box {
+      border-radius: 24px;
+      color: white;
+      text-align: center;
+      padding: 18px;
+      box-shadow: 0 14px 24px rgba(0,0,0,.13);
+    }
+
+    .score-box.red { background: linear-gradient(135deg, #ef4444, #f87171); }
+    .score-box.green { background: linear-gradient(135deg, #16a34a, #4ade80); }
+    .score-box small { display: block; opacity: .86; font-size: 12px; font-weight: 900; }
+    .score-box strong { font-size: 38px; line-height: 1; }
+
+    .progress {
+      padding: 18px;
+      border-radius: 24px;
+      background: #f5f0df;
+      border: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      font-weight: 1000;
+    }
+
+    .progress span {
+      color: #d97706;
+      font-size: 30px;
+    }
+
+    .team-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .team-btn {
+      padding: 16px;
+      border-radius: 24px;
+      color: white;
+      font-size: 18px;
+      box-shadow: 0 12px 20px rgba(0,0,0,.12);
+    }
+
+    .team-btn.red { background: var(--red); }
+    .team-btn.green { background: var(--green); }
+    .team-btn.active {
+      outline: 5px solid #facc15;
+      transform: scale(1.03);
+    }
+
+    .runner.red { border-bottom: 10px solid var(--red); }
+    .runner.green { border-bottom: 10px solid var(--green); }
+
+    .runner-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .runner-title h3 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 1000;
+    }
+
+    .avatar { font-size: 42px; }
+
+    @keyframes run {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-9px); }
+    }
+
+    .running { animation: run .32s infinite; }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .bar {
+      height: 14px;
+      border-radius: 999px;
+      background: #e9edf0;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.12);
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      transition: .2s;
+      border-radius: 999px;
+    }
+
+    .runner.red .bar i { background: linear-gradient(90deg, #ef4444, #fca5a5); }
+    .runner.green .bar i { background: linear-gradient(90deg, #16a34a, #86efac); }
+
+    .run-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 22px;
+      color: white;
+      font-size: 20px;
+      box-shadow: 0 14px 24px rgba(0,0,0,.16);
+    }
+
+    .run-btn.red { background: var(--red); }
+    .run-btn.green { background: var(--green); }
+    .run-btn:disabled {
+      background: #cbd5e1;
+      color: #64748b;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .food-hero {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .food-icon {
+      width: 82px;
+      height: 82px;
+      border-radius: 28px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #fff8d7, #eefbdc);
+      border: 1px solid #eadfbe;
+      font-size: 48px;
+      box-shadow: inset 0 2px 9px rgba(255,255,255,.9), 0 12px 20px rgba(0,0,0,.08);
+    }
+
+    .food-hero h2 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 1000;
+    }
+
+    .food-hero p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .mini {
+      padding: 14px 16px;
+      border-radius: 20px;
+      background: #f6f4e9;
+      border: 1px solid var(--line);
+      margin-bottom: 10px;
+    }
+
+    .mini b {
+      color: #315a24;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .mini div {
+      line-height: 1.65;
+      font-weight: 700;
+    }
+
+    .story {
+      margin-top: 12px;
+      padding: 18px;
+      border-radius: 24px;
+      background: #263527;
+      color: white;
+      line-height: 1.75;
+      box-shadow: 0 14px 26px rgba(0,0,0,.16);
+    }
+
+    .story b { color: #facc15; }
+
+    .hint {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      font-weight: 900;
+    }
+
+    .debug {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid #fed7aa;
+    }
+
+
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      z-index: 55;
+      background: rgba(20,26,20,.72);
+      backdrop-filter: blur(8px);
+      padding: 24px;
+    }
+
+    .intro-overlay.show { display: grid; }
+
+    .intro-box {
+      width: min(720px, 100%);
+      background: #fffdf4;
+      border-radius: 38px;
+      padding: 34px;
+      border: 4px solid #f59e0b;
+      box-shadow: 0 30px 70px rgba(0,0,0,.3);
+      text-align: center;
+    }
+
+    .intro-icon {
+      font-size: 82px;
+      width: 128px;
+      height: 128px;
+      margin: 0 auto 14px;
+      display: grid;
+      place-items: center;
+      border-radius: 38px;
+      background: linear-gradient(135deg, #fff8d7, #eefbdc);
+      border: 1px solid #eadfbe;
+    }
+
+    .intro-box h2 {
+      margin: 0;
+      font-size: 38px;
+      font-weight: 1000;
+      color: #315a24;
+    }
+
+    .intro-box h3 {
+      margin: 8px 0 16px;
+      font-size: 25px;
+      color: #d97706;
+    }
+
+    .intro-box p {
+      font-size: 20px;
+      line-height: 1.8;
+      color: #384a35;
+      font-weight: 800;
+      margin: 0;
+      text-align: left;
+      background: #f6f4e9;
+      border: 1px solid #e7dcc2;
+      border-radius: 24px;
+      padding: 18px;
+    }
+
+    .sound-row {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      color: #9a3412;
+      font-weight: 1000;
+    }
+
+    .wave {
+      width: 5px;
+      height: 14px;
+      border-radius: 99px;
+      background: #f59e0b;
+      animation: wave 0.8s infinite ease-in-out;
+    }
+
+    .wave:nth-child(2){ animation-delay: .12s; }
+    .wave:nth-child(3){ animation-delay: .24s; }
+
+    @keyframes wave {
+      0%,100% { height: 8px; }
+      50% { height: 26px; }
+    }
+
+    .skip-intro {
+      margin-top: 18px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      background: #263527;
+      color: white;
+      font-size: 16px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      z-index: 60;
+      background: rgba(20,26,20,.76);
+      backdrop-filter: blur(8px);
+      padding: 24px;
+    }
+
+    .modal.show { display: grid; }
+
+    .modal-box {
+      width: min(620px,100%);
+      text-align: center;
+      border-radius: 40px;
+      background: var(--paper);
+      padding: 44px 32px;
+      box-shadow: 0 30px 70px rgba(0,0,0,.3);
+      border: 4px solid #facc15;
+    }
+
+    .trophy { font-size: 88px; }
+
+    .modal-box h2 {
+      margin: 12px 0;
+      font-size: 42px;
+      font-weight: 1000;
+    }
+
+    .modal-box p {
+      font-size: 19px;
+      color: #4b5a47;
+      line-height: 1.7;
+      font-weight: 800;
+    }
+
+    .modal-box button {
+      padding: 16px 34px;
+      border-radius: 24px;
+      background: var(--green);
+      color: white;
+      font-size: 20px;
+      margin-top: 16px;
+    }
+
+
+    /* ===== 鄉鎮攻佔後：全畫面食農圖卡劇院模式 ===== */
+    .intro-box.theater {
+      width: min(1180px, 100%);
+      padding: 18px;
+      border-radius: 34px;
+    }
+
+    .intro-box.theater .intro-icon {
+      display: none;
+    }
+
+    .intro-box.theater h2 {
+      font-size: 28px;
+      margin-bottom: 2px;
+    }
+
+    .intro-box.theater h3 {
+      font-size: 20px;
+      margin: 0 0 10px;
+    }
+
+    .intro-card-image {
+      width: 100%;
+      max-height: 72vh;
+      object-fit: contain;
+      display: none;
+      border-radius: 24px;
+      box-shadow: 0 18px 44px rgba(0,0,0,.22);
+      background: #fff;
+    }
+
+    .intro-card-image.show {
+      display: block;
+      animation: cardFadeIn .35s ease-out both;
+    }
+
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(10px) scale(.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .intro-box.theater p {
+      display: none;
+    }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      svg { height: 560px; }
+      .map-wrap { min-height: 560px; }
+      .header-inner { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
 </head>
+
 <body>
-<h2>目前場次：<span id="session"></span></h2>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">🏃‍♂️</div>
+        <div>
+          <h1>邊跑邊逛・吃遍南投</h1>
+          <div class="subtitle">AI 食農大使｜南投食農領地戰</div>
+        </div>
+      </div>
+      <div class="pwa-tools">
+        <div id="pwaStatus" class="pwa-pill">線上展示模式</div>
+        <div id="mqttStatus" class="pwa-pill offline">MQTT 尚未連線</div>
+        <div id="roomStatus" class="pwa-pill">小組：讀取中</div>
+        <a id="playerLink" class="install-btn show" href="./player.html" target="_blank" style="text-decoration:none;display:inline-block;">📱 手機體感控制器</a>
+        <a id="leaderboardLink" class="install-btn show" href="./leaderboard.html" target="_blank" style="text-decoration:none;display:inline-block;">🏆 小組排行榜</a>
+        <a id="teacherLink" class="install-btn show" href="./teacher.html" target="_blank" style="text-decoration:none;display:inline-block;background:#2563eb;">🧑‍🏫 教師控制台</a>
+        <button id="newRoomBtn" class="install-btn show">🎲 建立小組</button>
+        <button id="copyPlayerBtn" class="install-btn show">🔗 複製玩家網址</button>
+        <button id="globalResetBtn" class="install-btn show" style="background:#dc2626">🧹 全場歸零</button>
+        <button id="installPwaBtn" class="install-btn">📲 安裝到主畫面</button>
+        <div class="status-pill">v1.7｜小組競賽 × 排行榜 × 教師控制台</div>
+      </div>
+    </div>
+  </header>
 
-<script>
-const url = new URL(location.href);
-const session = url.searchParams.get("session") || "S001";
-document.getElementById("session").innerText = session;
+  <main class="app">
+    <section class="card map-card">
+      <div class="map-head">
+        <div>
+          <h2>南投 13 鄉鎮食農地圖</h2>
+          <p>跑滿 10 步後，點選一個鄉鎮取得在地農產補給。</p>
+        </div>
+        <div class="mode-group">
+          <button id="halfMode" class="mode-btn active">半馬 7 點</button>
+          <button id="fullMode" class="mode-btn">全馬 13 點</button>
+          <button id="resetBtn" class="mode-btn">本組重置</button>
+          <button id="newSessionBtn" class="mode-btn" style="background:#2563eb;color:white;border-color:#2563eb">一鍵開新場</button>
+        </div>
+      </div>
 
-const client = mqtt.connect("wss://mqttgo.io:8084/mqtt");
-const topic = `nantou-food-race/${session}/test`;
+      <div class="map-wrap">
+        <div id="loader" class="loader">
+          <div class="loader-box">
+            <div style="font-size:42px;margin-bottom:8px;">🗺️</div>
+            正在載入南投真實地圖資料...
+          </div>
+        </div>
+        <div id="selectBanner" class="select-banner">已跑滿 10 步，請點選鄉鎮！</div>
+        <svg id="map"></svg>
+        <div class="map-caption">
+          <div style="font-size:30px">🌾</div>
+          <div>
+            <b>南投食農領地戰</b><br>
+            <span>點亮土地・認識家鄉・支持在地</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-client.on("connect", ()=>{
-  console.log("connected", topic);
-});
-</script>
+    <aside class="side">
+      <section class="card panel">
+        <h2>任務戰況</h2>
+        <div class="scores">
+          <div class="score-box red"><small>紅隊</small><strong id="redScore">0</strong></div>
+          <div class="score-box green"><small>綠隊</small><strong id="greenScore">0</strong></div>
+        </div>
+        <div class="progress">
+          <div>總達成度</div>
+          <span><em id="totalScore" style="font-style:normal">0</em> / <em id="goalScore" style="font-style:normal">7</em></span>
+        </div>
+        <div class="team-buttons">
+          <button id="redTeamBtn" class="team-btn red active">🔴 紅隊</button>
+          <button id="greenTeamBtn" class="team-btn green">🟢 綠隊</button>
+        </div>
+      </section>
+
+      <section class="card runner red">
+        <div class="runner-title">
+          <h3 style="color:#dc2626">TEAM RED</h3>
+          <div id="redAvatar" class="avatar">🏃‍♂️</div>
+        </div>
+        <div class="bar-label"><span>跑步進度</span><span><b id="redSteps">0</b> / 10</span></div>
+        <div class="bar"><i id="redBar"></i></div>
+        <button id="redRunBtn" class="run-btn red">紅隊跑一步</button>
+      </section>
+
+      <section class="card runner green">
+        <div class="runner-title">
+          <h3 style="color:#16a34a">TEAM GREEN</h3>
+          <div id="greenAvatar" class="avatar">🏃‍♀️</div>
+        </div>
+        <div class="bar-label"><span>跑步進度</span><span><b id="greenSteps">0</b> / 10</span></div>
+        <div class="bar"><i id="greenBar"></i></div>
+        <button id="greenRunBtn" class="run-btn green">綠隊跑一步</button>
+      </section>
+
+      <section class="card info">
+        <div class="food-hero">
+          <div id="foodIcon" class="food-icon">🧭</div>
+          <div>
+            <h2 id="townName">尚未選擇</h2>
+            <p id="productName">請先讓任一隊跑滿 10 步</p>
+          </div>
+        </div>
+        <div class="mini">
+          <b>★ 代表特色</b>
+          <div id="featureText">選擇鄉鎮後，這裡會顯示代表農產品與食農特色。</div>
+        </div>
+        <div class="mini">
+          <b>☘ 永續與低碳</b>
+          <div id="carbonText">鼓勵吃在地、食當季，縮短食物里程。</div>
+        </div>
+        <div class="mini">
+          <b>🛡 食安提醒</b>
+          <div id="allergenText">依不同農產顯示食用提醒。</div>
+        </div>
+        <div class="story">
+          <b>凱比食農導覽：</b>
+          <span id="storyText">準備開始！讓學生在跑步、地圖與在地農產之間，建立一場有身體感的食農學習。</span>
+        </div>
+        <div id="hintText" class="hint">目前選擇隊伍為紅隊。跑滿 10 步後，地圖會進入可攻佔狀態。</div>
+        <div id="debugText" class="debug">狀態：等待跑步</div>
+      </section>
+    </aside>
+  </main>
+
+
+  <div id="introOverlay" class="intro-overlay">
+    <div class="intro-box theater">
+      <div id="introIcon" class="intro-icon">🌾</div>
+      <h2 id="introTown">食材介紹</h2>
+      <h3 id="introProduct">南投好味道</h3>
+      <img id="introCardImage" class="intro-card-image" alt="南投食農鄉鎮圖卡">
+      <p id="introText">正在介紹食材...</p>
+      <div class="sound-row">
+        <span class="wave"></span><span class="wave"></span><span class="wave"></span>
+        <span id="introStatus">正在播放語音介紹</span>
+      </div>
+      <button id="skipIntroBtn" class="skip-intro">略過介紹，進入下一回合</button>
+    </div>
+  </div>
+
+  <div id="winModal" class="modal">
+    <div class="modal-box">
+      <div class="trophy">🏆</div>
+      <h2 id="winTitle">挑戰完成</h2>
+      <p id="winText"></p>
+      <button onclick="location.reload()">再玩一次</button>
+    </div>
+  </div>
+
+  <script>
+    const geoJsonUrl = "https://raw.githubusercontent.com/titaneric/Taiwan-GeoJSON/master/%E5%8D%97%E6%8A%95%E7%B8%A3%E9%84%89%E9%8E%AE.json";
+
+    const districtCodes = {
+      "南投市": { code: "3801", short: "南投" },
+      "埔里鎮": { code: "3802", short: "埔里" },
+      "草屯鎮": { code: "3803", short: "草屯" },
+      "竹山鎮": { code: "3804", short: "竹山" },
+      "集集鎮": { code: "3805", short: "集集" },
+      "名間鄉": { code: "3806", short: "名間" },
+      "鹿谷鄉": { code: "3807", short: "鹿谷" },
+      "中寮鄉": { code: "3808", short: "中寮" },
+      "魚池鄉": { code: "3809", short: "魚池" },
+      "國姓鄉": { code: "3810", short: "國姓" },
+      "水里鄉": { code: "3811", short: "水里" },
+      "信義鄉": { code: "3812", short: "信義" },
+      "仁愛鄉": { code: "3813", short: "仁愛" }
+    };
+
+
+    const townAlias = {
+      "南投": "南投市", "南投市": "南投市",
+      "埔里": "埔里鎮", "埔里鎮": "埔里鎮",
+      "草屯": "草屯鎮", "草屯鎮": "草屯鎮",
+      "竹山": "竹山鎮", "竹山鎮": "竹山鎮",
+      "集集": "集集鎮", "集集鎮": "集集鎮",
+      "名間": "名間鄉", "名間鄉": "名間鄉",
+      "鹿谷": "鹿谷鄉", "鹿谷鄉": "鹿谷鄉",
+      "中寮": "中寮鄉", "中寮鄉": "中寮鄉",
+      "魚池": "魚池鄉", "魚池鄉": "魚池鄉",
+      "國姓": "國姓鄉", "國姓鄉": "國姓鄉",
+      "水里": "水里鄉", "水里鄉": "水里鄉",
+      "信義": "信義鄉", "信義鄉": "信義鄉",
+      "仁愛": "仁愛鄉", "仁愛鄉": "仁愛鄉"
+    };
+
+
+
+    const townImages = {
+      "仁愛鄉": "images/renai.png",
+      "國姓鄉": "images/guoxing.png",
+      "草屯鎮": "images/caotun.png",
+      "南投市": "images/nantou.png",
+      "中寮鄉": "images/zhongliao.png",
+      "埔里鎮": "images/puli.png",
+      "魚池鄉": "images/yuchi.png",
+      "名間鄉": "images/mingjian.png",
+      "集集鎮": "images/jiji.png",
+      "水里鄉": "images/shuili.png",
+      "鹿谷鄉": "images/lugu.png",
+      "竹山鎮": "images/zhushan.png",
+      "信義鄉": "images/xinyi.png"
+    };
+
+    const foodData = {
+      "仁愛鄉": { icon:"🍄", product:"高山香菇", feature:"森林環境、肥厚菌傘、深山接菌栽培。", carbon:"高山在地鮮採，減少長途運輸，支持山村友善農業。", allergen:"天然食材，菇類過敏者仍需留意。", story:"仁愛鄉的高山香菇，就像森林送給我們的禮物。孩子透過地圖認識產地，也能理解食物背後的山林環境。" },
+      "國姓鄉": { icon:"☕", product:"國姓咖啡", feature:"阿拉比卡豆、柑橘香氣、高海拔精品咖啡。", carbon:"支持台灣在地咖啡，減少進口咖啡豆的運輸里程。", allergen:"含咖啡因，兒童與心悸者需酌量。", story:"國姓咖啡把山城的氣候變成香氣，讓學生知道農產不只是食物，也是一種地方品牌。" },
+      "草屯鎮": { icon:"🍡", product:"手工麻糬", feature:"糯米香 Q、內餡紮實、在地傳承。", carbon:"使用在地米食與地方製作，保留傳統產業價值。", allergen:"常見花生、芝麻、糯米，過敏者需確認成分。", story:"草屯麻糬最適合介紹『加工農產』，從糯米到點心，讓孩子看見農業與飲食文化的連結。" },
+      "南投市": { icon:"🍜", product:"南投意麵", feature:"陽光曝曬、麵體彈牙、傳統工法與古早味。", carbon:"地方手作食品縮短供應鏈，強化在地消費。", allergen:"含小麥麩質，麩質敏感者需注意。", story:"南投意麵讓學生知道，農產也能透過加工與手藝變成地方名片。" },
+      "中寮鄉": { icon:"🍯", product:"龍眼蜂蜜", feature:"純淨蜜源、琥珀色澤、花香濃郁。", carbon:"友善蜜源與在地蜂農，連結生態保育與農業生產。", allergen:"一歲以下嬰幼兒不建議食用蜂蜜。", story:"中寮蜂蜜能帶出蜜蜂授粉、生態多樣性與農業共好的概念，非常適合食農教育。" },
+      "埔里鎮": { icon:"🥬", product:"茭白筍", feature:"美人腿、湧泉灌溉、潔白脆嫩。", carbon:"產地直送新鮮蔬菜，降低冷鏈與長距離運輸負擔。", allergen:"高纖蔬菜，一般安全，腸胃敏感者可適量。", story:"埔里茭白筍讓孩子看見『水』與農業的關係，乾淨湧泉就是美人腿好吃的秘密。" },
+      "魚池鄉": { icon:"🫖", product:"日月潭紅茶", feature:"紅玉紅茶、薄荷香、肉桂香、紅寶石茶湯。", carbon:"支持在地茶產業與茶園永續管理。", allergen:"含咖啡因，兒童飲用需酌量。", story:"魚池紅茶是南投最有國際感的農產之一，能讓學生從一杯茶看見世界市場。" },
+      "名間鄉": { icon:"🍍", product:"名間鳳梨", feature:"紅土高原、酸甜比例佳、果肉細緻。", carbon:"食當季水果，減少非產季高耗能保存與運輸。", allergen:"鳳梨酵素可能刺激口腔，敏感者需注意。", story:"名間鳳梨適合說明土壤如何影響風味，紅土高原就是南投農產的自然教室。" },
+      "集集鎮": { icon:"🍌", product:"集集山蕉", feature:"口感紮實 Q 彈、高地生長、地方歷史故事。", carbon:"在地香蕉可作為運動補給，減少進口水果依賴。", allergen:"一般安全，香蕉過敏者需留意。", story:"集集山蕉能把運動補給與食農學習結合，跑步後吃香蕉，最有身體感。" },
+      "水里鄉": { icon:"🧉", product:"水里脆梅", feature:"手工古法、酸甜爽口、青梅醃漬。", carbon:"地方加工保存技術，延長農產生命週期，減少浪費。", allergen:"醃漬食品含糖與鹽分，需適量食用。", story:"水里脆梅能談保存技術，讓孩子知道以前的人如何用智慧保存季節的味道。" },
+      "鹿谷鄉": { icon:"🍵", product:"凍頂烏龍", feature:"雲霧滋養、炭火慢焙、金黃茶湯。", carbon:"支持在地茶農與山坡地友善管理。", allergen:"含咖啡因，兒童需酌量。", story:"鹿谷凍頂烏龍是南投的茶文化代表，從茶葉可延伸到地形、氣候、技藝與品牌。" },
+      "竹山鎮": { icon:"🍠", product:"紅土地瓜", feature:"紅色黏土栽培、質地綿密極甜、富含膳食纖維。", carbon:"在地根莖作物，保存容易、運輸負擔較低。", allergen:"優質澱粉來源，一般安全，血糖控制者需酌量。", story:"竹山紅土地瓜最能說明『土地給食物的個性』，同一種作物，因土壤不同而有不同風味。" },
+      "信義鄉": { icon:"🍇", product:"巨峰葡萄", feature:"黑寶石、高海拔冷涼孕育、果粉濃厚。", carbon:"支持高山水果產地直送，降低中間物流。", allergen:"天然果實，一般安全，糖分攝取需適量。", story:"信義葡萄讓學生看見高海拔氣候如何成就水果品質，也能連結原鄉農業與觀光。" }
+    };
+
+    const state = {
+      currentTeam: "red",
+      readyTeam: null,
+      redSteps: 0,
+      greenSteps: 0,
+      occupied: {},
+      goal: 7,
+      gameOver: false,
+      introPlaying: false
+    };
+
+    const $ = id => document.getElementById(id);
+
+    function debug(text) {
+      $("debugText").textContent = "狀態：" + text;
+      console.log("[南投食農領地戰]", text);
+    }
+
+    function normalizeTownName(rawName) {
+      if (!rawName) return "";
+      let name = String(rawName).trim();
+      name = name.replace("南投縣", "").replace("臺灣省", "").replace("台灣省", "").trim();
+
+      if (townAlias[name]) return townAlias[name];
+
+      const bare = name.replace(/[市鎮鄉區]/g, "").trim();
+      if (townAlias[bare]) return townAlias[bare];
+
+      return name;
+    }
+
+    const townCenters = {
+      "南投市": [120.685, 23.916],
+      "草屯鎮": [120.685, 23.974],
+      "埔里鎮": [120.964, 23.966],
+      "國姓鄉": [120.858, 24.037],
+      "仁愛鄉": [121.132, 24.023],
+      "中寮鄉": [120.770, 23.884],
+      "名間鄉": [120.702, 23.838],
+      "集集鎮": [120.785, 23.827],
+      "水里鄉": [120.855, 23.810],
+      "魚池鄉": [120.936, 23.896],
+      "信義鄉": [120.987, 23.635],
+      "竹山鎮": [120.682, 23.756],
+      "鹿谷鄉": [120.762, 23.744]
+    };
+
+    function findTownInValue(value) {
+      if (value == null) return "";
+      const text = String(value).trim();
+      const normalized = normalizeTownName(text);
+      if (foodData[normalized]) return normalized;
+      for (const town of Object.keys(foodData)) {
+        if (text.includes(town) || text.includes(districtCodes[town]?.short || "__NO__")) return town;
+      }
+      return "";
+    }
+
+    function getTownName(d) {
+      if (d.__townName) return d.__townName;
+
+      const p = d.properties || {};
+      const candidates = [
+        d.id, d.name, d.NAME, d.town, d.TOWN,
+        p.TOWNNAME, p.TOWN_NAME, p.TOWN, p.T_Name, p.TNAME,
+        p.name, p.Name, p.NAME, p.town, p.Town,
+        p.C_Name, p.CNAME, p.village, p.VILLNAME,
+        ...Object.values(p)
+      ];
+
+      for (const item of candidates) {
+        const found = findTownInValue(item);
+        if (found) return found;
+      }
+
+      return "";
+    }
+
+    function assignTownNamesByCentroid(geoData) {
+      const used = new Set();
+
+      geoData.features.forEach(feature => {
+        const directName = getTownName(feature);
+        if (directName) {
+          feature.__townName = directName;
+          used.add(directName);
+        }
+      });
+
+      geoData.features.forEach(feature => {
+        if (feature.__townName) return;
+
+        const [lon, lat] = d3.geoCentroid(feature);
+        let bestTown = "";
+        let bestDistance = Infinity;
+
+        for (const [town, center] of Object.entries(townCenters)) {
+          if (used.has(town)) continue;
+          const dx = lon - center[0];
+          const dy = lat - center[1];
+          const distance = dx * dx + dy * dy;
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestTown = town;
+          }
+        }
+
+        feature.__townName = bestTown;
+        used.add(bestTown);
+      });
+
+      const names = geoData.features.map(f => f.__townName).filter(Boolean);
+      console.log("[南投食農領地戰] 鄉鎮名稱對應完成：", names);
+    }
+
+    function getFood(town) {
+      return foodData[town] || {
+        icon: "❓",
+        product: "未設定農產品",
+        feature: "尚未建立資料，請檢查鄉鎮名稱是否對應。",
+        carbon: "尚未建立永續資料。",
+        allergen: "尚未建立食安提醒。",
+        story: "這個鄉鎮目前尚未建立完整食材介紹，但系統仍會進入下一回合。"
+      };
+    }
+
+    function setMode(goal) {
+      state.goal = goal;
+      $("goalScore").textContent = goal;
+      $("halfMode").classList.toggle("active", goal === 7);
+      $("fullMode").classList.toggle("active", goal === 13);
+    }
+
+    function setTeam(team) {
+      state.currentTeam = team;
+      $("redTeamBtn").classList.toggle("active", team === "red");
+      $("greenTeamBtn").classList.toggle("active", team === "green");
+      updateHint();
+    }
+
+    function addStep(team) {
+      if (state.gameOver || state.introPlaying) return;
+
+      if (state.readyTeam && state.readyTeam !== team) {
+        debug("請先讓已跑滿 10 步的隊伍選擇鄉鎮");
+        return;
+      }
+
+      if (team === "red") {
+        state.redSteps = Math.min(10, state.redSteps + 1);
+        if (state.redSteps >= 10) activateSelect("red");
+      } else {
+        state.greenSteps = Math.min(10, state.greenSteps + 1);
+        if (state.greenSteps >= 10) activateSelect("green");
+      }
+
+      updateUI();
+    }
+
+    function activateSelect(team) {
+      state.readyTeam = team;
+      setTeam(team);
+      $("selectBanner").classList.add("show");
+      d3.selectAll(".town").classed("ready", d => !state.occupied[getTownName(d)]);
+      $("storyText").textContent = `${team === "red" ? "紅隊" : "綠隊"}已經跑滿 10 步，請直接點選地圖上的一個鄉鎮。`;
+      debug(`${team === "red" ? "紅隊" : "綠隊"}等待選擇鄉鎮`);
+    }
+
+    function onTownClick(event, d) {
+      const town = getTownName(d);
+      const data = getFood(town);
+      debug("點選：" + town);
+
+      d3.selectAll(".town").classed("selected", false);
+      d3.select(this).classed("selected", true);
+
+      showInfo(town);
+
+      if (!state.readyTeam) {
+        $("storyText").textContent = `${town} 的代表農產是 ${data.product}。請先跑滿 10 步，就可以攻佔這個鄉鎮。`;
+        debug("尚未跑滿 10 步，只顯示資訊");
+        return;
+      }
+
+      if (state.occupied[town]) {
+        $("storyText").textContent = `${town} 已經被${state.occupied[town] === "red" ? "紅隊" : "綠隊"}佔領，請選擇其他鄉鎮。`;
+        debug(town + " 已被佔領");
+        return;
+      }
+
+      const team = state.readyTeam;
+
+      // 先完成遊戲狀態更新，避免後續語音或食材文字錯誤導致分數不增加
+      state.occupied[town] = team;
+      state.readyTeam = null;
+      state.introPlaying = true;
+
+      d3.select(this)
+        .classed("red", team === "red")
+        .classed("green", team === "green")
+        .classed("ready", false);
+
+      $("selectBanner").classList.remove("show");
+      d3.selectAll(".town").classed("ready", false);
+
+      updateScore();
+      publishRoomSummary("playing");
+      showInfo(town);
+      $("storyText").textContent = `${team === "red" ? "紅隊" : "綠隊"}成功攻佔 ${town}！現在進入食材介紹。${data.story}`;
+      debug(`${team === "red" ? "紅隊" : "綠隊"}成功攻佔 ${town}，目前佔領數已更新，準備播放食材介紹`);
+
+      updateUI();
+      playFoodIntro(town, team);
+    }
+
+    function buildIntroText(town, team) {
+      const data = getFood(town);
+      return `${team === "red" ? "紅隊" : "綠隊"}成功攻佔${town}。這裡的代表食材是${data.product}。${data.story} 特色是：${data.feature} 永續重點是：${data.carbon} 食安提醒：${data.allergen}`;
+    }
+
+    function playFoodIntro(town, team) {
+      const data = getFood(town);
+      const introText = buildIntroText(town, team);
+      const imagePath = townImages[town] || "";
+
+      $("introIcon").textContent = data.icon;
+      $("introTown").textContent = `${town} 食材介紹`;
+      $("introProduct").textContent = data.product;
+      $("introText").textContent = introText;
+      $("introStatus").textContent = "正在播放語音介紹";
+
+      if (imagePath) {
+        $("introCardImage").src = imagePath;
+        $("introCardImage").classList.add("show");
+      } else {
+        $("introCardImage").removeAttribute("src");
+        $("introCardImage").classList.remove("show");
+      }
+
+      $("introOverlay").classList.add("show");
+
+      let finished = false;
+      let fallbackTimer = null;
+
+      function finishIntro() {
+        if (finished) return;
+        finished = true;
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        try { window.speechSynthesis.cancel(); } catch(e) {}
+
+        $("introOverlay").classList.remove("show");
+        $("introCardImage").classList.remove("show");
+        resetRoundAfterIntro(town, team);
+      }
+
+      $("skipIntroBtn").onclick = finishIntro;
+
+      // 保險機制：如果瀏覽器不支援或語音 onend 沒回來，仍會自動進入下一回合
+      fallbackTimer = setTimeout(finishIntro, Math.max(5500, introText.length * 220));
+
+      try {
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(introText);
+          utterance.lang = "zh-TW";
+          utterance.rate = 1.05;
+          utterance.pitch = 1;
+          utterance.onend = finishIntro;
+          utterance.onerror = finishIntro;
+          window.speechSynthesis.speak(utterance);
+        } else {
+          $("introStatus").textContent = "此瀏覽器不支援語音，將自動進入下一回合";
+        }
+      } catch(e) {
+        $("introStatus").textContent = "語音播放失敗，將自動進入下一回合";
+      }
+    }
+
+    function resetRoundAfterIntro(town, team) {
+      state.redSteps = 0;
+      state.greenSteps = 0;
+      state.readyTeam = null;
+      state.introPlaying = false;
+
+      $("selectBanner").classList.remove("show");
+      d3.selectAll(".town").classed("ready", false);
+
+      $("storyText").textContent = `${team === "red" ? "紅隊" : "綠隊"}完成 ${town} 食材介紹。兩隊步數已歸零，下一回合開始！`;
+      debug(`${town} 食材介紹結束，兩隊步數歸零，進入下一回合`);
+
+      updateUI();
+      publishRoomSummary("playing");
+      checkWin();
+    }
+
+
+    function showInfo(town) {
+      const data = getFood(town);
+      const code = districtCodes[town]?.code || "";
+
+      $("foodIcon").textContent = data.icon;
+      $("townName").textContent = code ? `${town}｜${code}` : town;
+      $("productName").textContent = data.product;
+      $("featureText").textContent = data.feature;
+      $("carbonText").textContent = data.carbon;
+      $("allergenText").textContent = data.allergen;
+      $("storyText").textContent = data.story;
+    }
+
+    function updateScore() {
+      let red = 0;
+      let green = 0;
+      Object.values(state.occupied).forEach(team => {
+        if (team === "red") red++;
+        if (team === "green") green++;
+      });
+      $("redScore").textContent = red;
+      $("greenScore").textContent = green;
+      $("totalScore").textContent = red + green;
+      return { red, green, total: red + green };
+    }
+
+    function updateUI() {
+      $("redSteps").textContent = state.redSteps;
+      $("greenSteps").textContent = state.greenSteps;
+      $("redBar").style.width = `${state.redSteps * 10}%`;
+      $("greenBar").style.width = `${state.greenSteps * 10}%`;
+
+      $("redAvatar").classList.toggle("running", state.redSteps > 0 && !state.readyTeam);
+      $("greenAvatar").classList.toggle("running", state.greenSteps > 0 && !state.readyTeam);
+
+      $("redRunBtn").disabled = state.gameOver || state.introPlaying || (!!state.readyTeam && state.readyTeam !== "red");
+      $("greenRunBtn").disabled = state.gameOver || state.introPlaying || (!!state.readyTeam && state.readyTeam !== "green");
+
+      updateScore();
+      updateHint();
+    }
+
+    function updateHint() {
+      if (state.introPlaying) {
+        $("hintText").textContent = "正在播放食材介紹，播放結束後兩隊步數會歸零並進入下一回合。";
+      } else if (state.readyTeam) {
+        $("hintText").textContent = `${state.readyTeam === "red" ? "紅隊" : "綠隊"}已取得攻佔資格，請點選尚未佔領的鄉鎮。`;
+      } else {
+        $("hintText").textContent = `目前選擇隊伍為${state.currentTeam === "red" ? "紅隊" : "綠隊"}。跑滿 10 步後，地圖會進入可攻佔狀態。`;
+      }
+    }
+
+    function checkWin() {
+      const score = updateScore();
+      if (score.total < state.goal) return;
+
+      state.gameOver = true;
+      publishRoomSummary("finished");
+
+      let title = "";
+      let text = `紅隊佔領 ${score.red} 個鄉鎮，綠隊佔領 ${score.green} 個鄉鎮。`;
+
+      if (score.red > score.green) {
+        title = "紅隊獲勝！";
+        text += "紅隊完成更多在地食農探索任務。";
+      } else if (score.green > score.red) {
+        title = "綠隊獲勝！";
+        text += "綠隊完成更多在地食農探索任務。";
+      } else {
+        title = "雙方平手！";
+        text += "兩隊都是最棒的南投食農小大使。";
+      }
+
+      $("winTitle").textContent = title;
+      $("winText").textContent = text;
+      $("winModal").classList.add("show");
+      $("redRunBtn").disabled = true;
+      $("greenRunBtn").disabled = true;
+    }
+
+    function setupMap() {
+      const svg = d3.select("#map");
+      const width = 760;
+      const height = 680;
+      svg.attr("viewBox", `0 0 ${width} ${height}`);
+
+      const defs = svg.append("defs");
+
+      const neutral = defs.append("linearGradient").attr("id","neutralLand").attr("x1","0").attr("y1","0").attr("x2","1").attr("y2","1");
+      neutral.append("stop").attr("offset","0%").attr("stop-color","#e6dcc2");
+      neutral.append("stop").attr("offset","100%").attr("stop-color","#b8c7a5");
+
+      const red = defs.append("linearGradient").attr("id","redLand").attr("x1","0").attr("y1","0").attr("x2","1").attr("y2","1");
+      red.append("stop").attr("offset","0%").attr("stop-color","#fecaca");
+      red.append("stop").attr("offset","100%").attr("stop-color","#ef4444");
+
+      const green = defs.append("linearGradient").attr("id","greenLand").attr("x1","0").attr("y1","0").attr("x2","1").attr("y2","1");
+      green.append("stop").attr("offset","0%").attr("stop-color","#bbf7d0");
+      green.append("stop").attr("offset","100%").attr("stop-color","#16a34a");
+
+      const lake = defs.append("radialGradient").attr("id","lakeGrad").attr("cx","45%").attr("cy","38%").attr("r","70%");
+      lake.append("stop").attr("offset","0%").attr("stop-color","#a7f3ff");
+      lake.append("stop").attr("offset","100%").attr("stop-color","#0ea5e9");
+
+      d3.json(geoJsonUrl).then(geoData => {
+        $("loader").style.display = "none";
+
+        assignTownNamesByCentroid(geoData);
+
+        const projection = d3.geoMercator().fitSize([width, height], geoData);
+        const path = d3.geoPath().projection(projection);
+        const g = svg.append("g");
+
+        g.selectAll("path")
+          .data(geoData.features)
+          .enter()
+          .append("path")
+          .attr("class", "town")
+          .attr("d", path)
+          .attr("data-name", d => getTownName(d))
+          .on("click", onTownClick);
+
+        const fishFeature = geoData.features.find(f => getTownName(f) === "魚池鄉");
+        if (fishFeature) {
+          const c = path.centroid(fishFeature);
+          svg.append("ellipse")
+            .attr("class","lake")
+            .attr("cx", c[0] + 4)
+            .attr("cy", c[1] + 12)
+            .attr("rx", 34)
+            .attr("ry", 18)
+            .attr("transform", `rotate(-18 ${c[0]+4} ${c[1]+12})`);
+          svg.append("text")
+            .attr("class","lake-label")
+            .attr("x", c[0] + 4)
+            .attr("y", c[1] + 14)
+            .text("日月潭");
+        }
+
+        g.selectAll("text.town-label")
+          .data(geoData.features)
+          .enter()
+          .append("text")
+          .attr("class", "town-label")
+          .attr("x", d => path.centroid(d)[0])
+          .attr("y", d => path.centroid(d)[1] - 7)
+          .text(d => districtCodes[getTownName(d)]?.short || getTownName(d));
+
+        g.selectAll("text.town-code")
+          .data(geoData.features)
+          .enter()
+          .append("text")
+          .attr("class", "town-code")
+          .attr("x", d => path.centroid(d)[0])
+          .attr("y", d => path.centroid(d)[1] + 10)
+          .text(d => districtCodes[getTownName(d)]?.code || "");
+
+        debug("地圖已載入，請開始跑步");
+      }).catch(err => {
+        $("loader").innerHTML = "<div class='loader-box' style='color:#dc2626'>地圖資料載入失敗，請確認網路連線</div>";
+        debug("地圖載入失敗");
+      });
+    }
+
+    $("redTeamBtn").onclick = () => setTeam("red");
+    $("greenTeamBtn").onclick = () => setTeam("green");
+    $("redRunBtn").onclick = () => addStep("red");
+    $("greenRunBtn").onclick = () => addStep("green");
+    $("halfMode").onclick = () => setMode(7);
+    $("fullMode").onclick = () => setMode(13);
+    $("resetBtn").onclick = () => location.reload();
+
+    // ===== v1.3 小組代碼制版：主畫面 MQTT 接收器 =====
+    const MQTT_CONFIG = {
+      brokerUrl: "wss://MQTTGO.io:8084/mqtt",
+      topicBase: "nantou-food-race"
+    };
+
+    let mqttClient = null;
+    let activeRoomId = "";
+    let activeSessionId = "";
+
+    function normalizeSessionId(value) {
+      return String(value || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9-]/g, "")
+        .slice(0, 18);
+    }
+
+    function generateSessionId() {
+      const d = new Date();
+      const y = String(d.getFullYear()).slice(2);
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      const day = String(d.getDate()).padStart(2,"0");
+      const code = Math.random().toString(36).slice(2,5).toUpperCase();
+      return `S${y}${m}${day}-${code}`;
+    }
+
+    function getInitialSessionId() {
+      const params = new URLSearchParams(location.search);
+      const fromUrl = normalizeSessionId(params.get("session"));
+      if (fromUrl) {
+        localStorage.setItem("nantou-food-session-id", fromUrl);
+        return fromUrl;
+      }
+      const saved = normalizeSessionId(localStorage.getItem("nantou-food-session-id"));
+      if (saved) return saved;
+      const created = generateSessionId();
+      localStorage.setItem("nantou-food-session-id", created);
+      return created;
+    }
+
+    function normalizeRoomId(value) {
+      return String(value || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 6);
+    }
+
+    function generateRoomId() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let id = "";
+      for (let i = 0; i < 4; i++) id += chars[Math.floor(Math.random() * chars.length)];
+      return id;
+    }
+
+    function getInitialRoomId() {
+      const params = new URLSearchParams(location.search);
+      const fromUrl = normalizeRoomId(params.get("group") || params.get("room"));
+      if (fromUrl) {
+        localStorage.setItem("nantou-food-room-id", fromUrl);
+        return fromUrl;
+      }
+
+      const saved = normalizeRoomId(localStorage.getItem("nantou-food-room-id"));
+      if (saved) return saved;
+
+      const created = generateRoomId();
+      localStorage.setItem("nantou-food-room-id", created);
+      return created;
+    }
+
+    function getPlayerUrl() {
+      const basePath = location.pathname.replace(/[^/]*$/, "");
+      return `${location.origin}${basePath}player.html?session=${activeSessionId}&group=${activeRoomId}`;
+    }
+
+    function getRoomTopics(roomId = activeRoomId) {
+      return {
+        red: `${MQTT_CONFIG.topicBase}/${activeSessionId}/${roomId}/red`,
+        green: `${MQTT_CONFIG.topicBase}/${activeSessionId}/${roomId}/green`,
+        summary: `${MQTT_CONFIG.topicBase}/${activeSessionId}/${roomId}/summary`,
+        leaderboard: `${MQTT_CONFIG.topicBase}/${activeSessionId}/leaderboard/update`,
+        controlAll: `${MQTT_CONFIG.topicBase}/${activeSessionId}/control/all`,
+        controlRoom: `${MQTT_CONFIG.topicBase}/${activeSessionId}/control/${roomId}`
+      };
+    }
+
+    function updateRoomDisplay() {
+      const roomStatus = document.getElementById("roomStatus");
+      const playerLink = document.getElementById("playerLink");
+      if (roomStatus) roomStatus.textContent = `場次：${activeSessionId}｜小組：${activeRoomId}`;
+      if (playerLink) {
+        playerLink.href = getPlayerUrl();
+        playerLink.textContent = `📱 手機控制器｜場次 ${activeSessionId}｜小組 ${activeRoomId}`;
+      }
+    }
+
+    function setMqttStatus(text, online = false) {
+      const el = document.getElementById("mqttStatus");
+      if (!el) return;
+      el.textContent = text;
+      el.classList.toggle("offline", !online);
+    }
+
+    function handleMobileStep(team, payloadText) {
+      let data = {};
+      try { data = JSON.parse(payloadText); } catch (e) { data = {}; }
+
+      if (data.mode && data.mode !== "mobile") return;
+      if (data.sessionId && normalizeSessionId(data.sessionId) !== activeSessionId) return;
+      if ((data.roomId || data.groupId) && normalizeRoomId(data.roomId || data.groupId) !== activeRoomId) return;
+
+      const incomingTeam = data.team || team;
+      if (incomingTeam !== "red" && incomingTeam !== "green") return;
+
+      addStep(incomingTeam);
+      debug(`收到小組 ${activeRoomId} 手機體感步伐：${incomingTeam === "red" ? "紅隊" : "綠隊"}`);
+    }
+
+
+    // ===== v1.7 小組排行榜：把本小組摘要廣播出去 =====
+    function publishRoomSummary(status = "playing") {
+      if (!mqttClient || !mqttClient.connected || !activeRoomId) return;
+      const score = updateScore();
+      const topics = getRoomTopics();
+      const payload = {
+        version: "v1.7",
+        sessionId: activeSessionId,
+        roomId: activeRoomId,
+        groupId: activeRoomId,
+        groupName: `小組 ${activeRoomId}`,
+        redTerritory: score.red,
+        greenTerritory: score.green,
+        totalTerritory: score.total,
+        redSteps: state.redSteps,
+        greenSteps: state.greenSteps,
+        goal: state.goal,
+        totalScore: score.total * 10,
+        status: state.gameOver ? "finished" : status,
+        timestamp: Date.now()
+      };
+      const text = JSON.stringify(payload);
+      mqttClient.publish(topics.summary, text, { retain: true });
+      mqttClient.publish(topics.leaderboard, text, { retain: false });
+    }
+
+
+    // ===== v1.7 全場歸零：主畫面重置與控制廣播 =====
+    function resetMainGameState(reason = "全場歸零") {
+      try { window.speechSynthesis.cancel(); } catch(e) {}
+
+      state.currentTeam = "red";
+      state.readyTeam = null;
+      state.redSteps = 0;
+      state.greenSteps = 0;
+      state.occupied = {};
+      state.gameOver = false;
+      state.introPlaying = false;
+
+      const introOverlay = document.getElementById("introOverlay");
+      const introCardImage = document.getElementById("introCardImage");
+      const winModal = document.getElementById("winModal");
+      const selectBanner = document.getElementById("selectBanner");
+      if (introOverlay) introOverlay.classList.remove("show");
+      if (introCardImage) introCardImage.classList.remove("show");
+      if (winModal) winModal.classList.remove("show");
+      if (selectBanner) selectBanner.classList.remove("show");
+
+      d3.selectAll(".town")
+        .classed("red", false)
+        .classed("green", false)
+        .classed("ready", false)
+        .classed("selected", false);
+
+      setTeam("red");
+      updateUI();
+      document.getElementById("foodIcon").textContent = "🧭";
+      document.getElementById("townName").textContent = "尚未選擇";
+      document.getElementById("productName").textContent = "請先讓任一隊跑滿 10 步";
+      document.getElementById("featureText").textContent = "選擇鄉鎮後，這裡會顯示代表農產品與食農特色。";
+      document.getElementById("carbonText").textContent = "鼓勵吃在地、食當季，縮短食物里程。";
+      document.getElementById("allergenText").textContent = "依不同農產顯示食用提醒。";
+      document.getElementById("storyText").textContent = reason + "，本小組已回到初始狀態。";
+      debug(reason + "：主畫面已歸零");
+      publishRoomSummary("waiting");
+    }
+
+    function publishGlobalReset() {
+      const topics = getRoomTopics();
+      const payload = {
+        version: "v1.7",
+        action: "resetAll",
+        target: "all",
+        roomId: activeRoomId,
+        timestamp: Date.now()
+      };
+      resetMainGameState("教師執行全場歸零");
+      if (mqttClient && mqttClient.connected) {
+        mqttClient.publish(topics.controlAll, JSON.stringify(payload), { retain: false });
+        mqttClient.publish(topics.leaderboard, JSON.stringify(payload), { retain: false });
+      }
+    }
+
+    function handleControlMessage(payloadText) {
+      let data = {};
+      try { data = JSON.parse(payloadText); } catch(e) { return; }
+      if (data.action !== "resetAll" && data.action !== "resetRoom") return;
+      if (data.action === "resetRoom" && normalizeRoomId(data.roomId) !== activeRoomId) return;
+      resetMainGameState(data.action === "resetAll" ? "收到全場歸零指令" : "收到本小組歸零指令");
+    }
+
+    function initRoomControls() {
+      activeSessionId = getInitialSessionId();
+      activeRoomId = getInitialRoomId();
+      updateRoomDisplay();
+
+      const newRoomBtn = document.getElementById("newRoomBtn");
+      if (newRoomBtn) {
+        newRoomBtn.onclick = () => {
+          const newId = generateRoomId();
+          localStorage.setItem("nantou-food-room-id", newId);
+          location.href = `${location.pathname}?session=${activeSessionId}&group=${newId}`;
+        };
+      }
+
+      const newSessionBtn = document.getElementById("newSessionBtn");
+      if (newSessionBtn) {
+        newSessionBtn.onclick = () => {
+          const newSession = generateSessionId();
+          const newGroup = generateRoomId();
+          localStorage.setItem("nantou-food-session-id", newSession);
+          localStorage.setItem("nantou-food-room-id", newGroup);
+          location.href = `${location.pathname}?session=${newSession}&group=${newGroup}`;
+        };
+      }
+
+      const copyPlayerBtn = document.getElementById("copyPlayerBtn");
+      if (copyPlayerBtn) {
+        copyPlayerBtn.onclick = async () => {
+          const url = getPlayerUrl();
+          try {
+            await navigator.clipboard.writeText(url);
+            copyPlayerBtn.textContent = "✅ 已複製";
+            setTimeout(() => copyPlayerBtn.textContent = "🔗 複製玩家網址", 1400);
+          } catch (e) {
+            prompt("請複製玩家網址", url);
+          }
+        };
+      }
+
+      const globalResetBtn = document.getElementById("globalResetBtn");
+      if (globalResetBtn) {
+        globalResetBtn.onclick = () => {
+          const ok = confirm("確定要全場歸零嗎？所有小組、玩家端與排行榜都會清空。是否繼續？");
+          if (ok) publishGlobalReset();
+        };
+      }
+    }
+
+    function initMqttRaceBridge() {
+      if (typeof mqtt === "undefined") {
+        setMqttStatus("MQTT 套件未載入", false);
+        console.warn("[MQTT] mqtt.js 尚未載入，請確認網路或 CDN。手動模式仍可使用。");
+        return;
+      }
+
+      const topics = getRoomTopics();
+      const clientId = `nantou-main-${activeRoomId}-${Math.random().toString(16).slice(2)}`;
+      mqttClient = mqtt.connect(MQTT_CONFIG.brokerUrl, {
+        clientId,
+        clean: true,
+        reconnectPeriod: 2000,
+        connectTimeout: 8000
+      });
+
+      mqttClient.on("connect", () => {
+        setMqttStatus(`MQTT 已連線｜${activeSessionId}｜${activeRoomId}`, true);
+        mqttClient.subscribe([topics.red, topics.green, topics.controlAll, topics.controlRoom], (err) => {
+          if (err) {
+            setMqttStatus("MQTT 訂閱失敗", false);
+            console.warn("[MQTT] 訂閱失敗", err);
+          } else {
+            console.log("[MQTT] 已訂閱 Room Topic", topics);
+            publishRoomSummary("waiting");
+          }
+        });
+      });
+
+      mqttClient.on("reconnect", () => setMqttStatus("MQTT 重新連線中", false));
+      mqttClient.on("offline", () => setMqttStatus("MQTT 離線，手動模式可用", false));
+      mqttClient.on("error", (err) => {
+        setMqttStatus("MQTT 錯誤，手動模式可用", false);
+        console.warn("[MQTT] 錯誤", err);
+      });
+
+      mqttClient.on("message", (topic, message) => {
+        const text = message.toString();
+        if (topic === topics.red) handleMobileStep("red", text);
+        if (topic === topics.green) handleMobileStep("green", text);
+        if (topic === topics.controlAll || topic === topics.controlRoom) handleControlMessage(text);
+      });
+    }
+
+    updateUI();
+    setupMap();
+    initRoomControls();
+    initMqttRaceBridge();
+  </script>
+
+  <script>
+    // ===== v1.1 PWA 可安裝版：安裝提示、離線狀態、Service Worker 註冊 =====
+    let deferredInstallPrompt = null;
+
+    function updatePwaStatus() {
+      const status = document.getElementById("pwaStatus");
+      if (!status) return;
+
+      if (navigator.onLine) {
+        status.textContent = "線上展示模式";
+        status.classList.remove("offline");
+      } else {
+        status.textContent = "離線展示模式";
+        status.classList.add("offline");
+      }
+    }
+
+    window.addEventListener("online", updatePwaStatus);
+    window.addEventListener("offline", updatePwaStatus);
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      const installBtn = document.getElementById("installPwaBtn");
+      if (installBtn) installBtn.classList.add("show");
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredInstallPrompt = null;
+      const installBtn = document.getElementById("installPwaBtn");
+      if (installBtn) installBtn.classList.remove("show");
+      const status = document.getElementById("pwaStatus");
+      if (status) status.textContent = "已安裝 App 模式";
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      updatePwaStatus();
+
+      const installBtn = document.getElementById("installPwaBtn");
+      if (installBtn) {
+        installBtn.addEventListener("click", async () => {
+          if (!deferredInstallPrompt) {
+            alert("若未出現安裝視窗，請使用瀏覽器選單中的「加入主畫面」。");
+            return;
+          }
+          deferredInstallPrompt.prompt();
+          await deferredInstallPrompt.userChoice;
+          deferredInstallPrompt = null;
+          installBtn.classList.remove("show");
+        });
+      }
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("./service-worker.js")
+          .then((registration) => {
+            console.log("[PWA] Service Worker 已註冊", registration.scope);
+          })
+          .catch((error) => {
+            console.warn("[PWA] Service Worker 註冊失敗", error);
+          });
+      }
+    });
+  </script>
+
 </body>
 </html>
