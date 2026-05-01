@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>南投食農小大使｜食農領地戰 v1.7 全場歸零版</title>
+  <title>南投食農小大使｜食農領地戰 v1.4 多組排行榜</title>
   <meta name="theme-color" content="#2f855a" />
   <meta name="description" content="南投食農領地戰 PWA 可安裝版，結合紅綠隊競賽、南投13鄉鎮食農地圖與離線展示。" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -809,15 +809,13 @@
       <div class="pwa-tools">
         <div id="pwaStatus" class="pwa-pill">線上展示模式</div>
         <div id="mqttStatus" class="pwa-pill offline">MQTT 尚未連線</div>
-        <div id="roomStatus" class="pwa-pill">小組：讀取中</div>
+        <div id="roomStatus" class="pwa-pill">房間：讀取中</div>
         <a id="playerLink" class="install-btn show" href="./player.html" target="_blank" style="text-decoration:none;display:inline-block;">📱 手機體感控制器</a>
-        <a id="leaderboardLink" class="install-btn show" href="./leaderboard.html" target="_blank" style="text-decoration:none;display:inline-block;">🏆 小組排行榜</a>
-        <a id="teacherLink" class="install-btn show" href="./teacher.html" target="_blank" style="text-decoration:none;display:inline-block;background:#2563eb;">🧑‍🏫 教師控制台</a>
-        <button id="newRoomBtn" class="install-btn show">🎲 建立小組</button>
+        <a id="leaderboardLink" class="install-btn show" href="./leaderboard.html" target="_blank" style="text-decoration:none;display:inline-block;">🏆 多組排行榜</a>
+        <button id="newRoomBtn" class="install-btn show">🎲 建立新房間</button>
         <button id="copyPlayerBtn" class="install-btn show">🔗 複製玩家網址</button>
-        <button id="globalResetBtn" class="install-btn show" style="background:#dc2626">🧹 全場歸零</button>
         <button id="installPwaBtn" class="install-btn">📲 安裝到主畫面</button>
-        <div class="status-pill">v1.7｜小組競賽 × 排行榜 × 教師控制台</div>
+        <div class="status-pill">v1.4｜Room ID × 多組排行榜 × MQTTGO｜保留手動備援</div>
       </div>
     </div>
   </header>
@@ -832,8 +830,7 @@
         <div class="mode-group">
           <button id="halfMode" class="mode-btn active">半馬 7 點</button>
           <button id="fullMode" class="mode-btn">全馬 13 點</button>
-          <button id="resetBtn" class="mode-btn">本組重置</button>
-          <button id="newSessionBtn" class="mode-btn" style="background:#2563eb;color:white;border-color:#2563eb">一鍵開新場</button>
+          <button id="resetBtn" class="mode-btn">重新開始</button>
         </div>
       </div>
 
@@ -1486,7 +1483,7 @@
     $("fullMode").onclick = () => setMode(13);
     $("resetBtn").onclick = () => location.reload();
 
-    // ===== v1.3 小組代碼制版：主畫面 MQTT 接收器 =====
+    // ===== v1.3 Room ID 房間制版：主畫面 MQTT 接收器 =====
     const MQTT_CONFIG = {
       brokerUrl: "wss://MQTTGO.io:8084/mqtt",
       topicBase: "nantou-food-race"
@@ -1494,38 +1491,6 @@
 
     let mqttClient = null;
     let activeRoomId = "";
-    let activeSessionId = "";
-
-    function normalizeSessionId(value) {
-      return String(value || "")
-        .trim()
-        .toUpperCase()
-        .replace(/[^A-Z0-9-]/g, "")
-        .slice(0, 18);
-    }
-
-    function generateSessionId() {
-      const d = new Date();
-      const y = String(d.getFullYear()).slice(2);
-      const m = String(d.getMonth()+1).padStart(2,"0");
-      const day = String(d.getDate()).padStart(2,"0");
-      const code = Math.random().toString(36).slice(2,5).toUpperCase();
-      return `S${y}${m}${day}-${code}`;
-    }
-
-    function getInitialSessionId() {
-      const params = new URLSearchParams(location.search);
-      const fromUrl = normalizeSessionId(params.get("session"));
-      if (fromUrl) {
-        localStorage.setItem("nantou-food-session-id", fromUrl);
-        return fromUrl;
-      }
-      const saved = normalizeSessionId(localStorage.getItem("nantou-food-session-id"));
-      if (saved) return saved;
-      const created = generateSessionId();
-      localStorage.setItem("nantou-food-session-id", created);
-      return created;
-    }
 
     function normalizeRoomId(value) {
       return String(value || "")
@@ -1544,7 +1509,7 @@
 
     function getInitialRoomId() {
       const params = new URLSearchParams(location.search);
-      const fromUrl = normalizeRoomId(params.get("group") || params.get("room"));
+      const fromUrl = normalizeRoomId(params.get("room"));
       if (fromUrl) {
         localStorage.setItem("nantou-food-room-id", fromUrl);
         return fromUrl;
@@ -1560,27 +1525,25 @@
 
     function getPlayerUrl() {
       const basePath = location.pathname.replace(/[^/]*$/, "");
-      return `${location.origin}${basePath}player.html?session=${activeSessionId}&group=${activeRoomId}`;
+      return `${location.origin}${basePath}player.html?room=${activeRoomId}`;
     }
 
     function getRoomTopics(roomId = activeRoomId) {
       return {
-        red: `${MQTT_CONFIG.topicBase}/${activeSessionId}/${roomId}/red`,
-        green: `${MQTT_CONFIG.topicBase}/${activeSessionId}/${roomId}/green`,
-        summary: `${MQTT_CONFIG.topicBase}/${activeSessionId}/${roomId}/summary`,
-        leaderboard: `${MQTT_CONFIG.topicBase}/${activeSessionId}/leaderboard/update`,
-        controlAll: `${MQTT_CONFIG.topicBase}/${activeSessionId}/control/all`,
-        controlRoom: `${MQTT_CONFIG.topicBase}/${activeSessionId}/control/${roomId}`
+        red: `${MQTT_CONFIG.topicBase}/${roomId}/red`,
+        green: `${MQTT_CONFIG.topicBase}/${roomId}/green`,
+        summary: `${MQTT_CONFIG.topicBase}/${roomId}/summary`,
+        leaderboard: `${MQTT_CONFIG.topicBase}/leaderboard/update`
       };
     }
 
     function updateRoomDisplay() {
       const roomStatus = document.getElementById("roomStatus");
       const playerLink = document.getElementById("playerLink");
-      if (roomStatus) roomStatus.textContent = `場次：${activeSessionId}｜小組：${activeRoomId}`;
+      if (roomStatus) roomStatus.textContent = `房間：${activeRoomId}`;
       if (playerLink) {
         playerLink.href = getPlayerUrl();
-        playerLink.textContent = `📱 手機控制器｜場次 ${activeSessionId}｜小組 ${activeRoomId}`;
+        playerLink.textContent = `📱 手機控制器｜房間 ${activeRoomId}`;
       }
     }
 
@@ -1596,28 +1559,25 @@
       try { data = JSON.parse(payloadText); } catch (e) { data = {}; }
 
       if (data.mode && data.mode !== "mobile") return;
-      if (data.sessionId && normalizeSessionId(data.sessionId) !== activeSessionId) return;
-      if ((data.roomId || data.groupId) && normalizeRoomId(data.roomId || data.groupId) !== activeRoomId) return;
+      if (data.roomId && normalizeRoomId(data.roomId) !== activeRoomId) return;
 
       const incomingTeam = data.team || team;
       if (incomingTeam !== "red" && incomingTeam !== "green") return;
 
       addStep(incomingTeam);
-      debug(`收到小組 ${activeRoomId} 手機體感步伐：${incomingTeam === "red" ? "紅隊" : "綠隊"}`);
+      debug(`收到房間 ${activeRoomId} 手機體感步伐：${incomingTeam === "red" ? "紅隊" : "綠隊"}`);
     }
 
 
-    // ===== v1.7 小組排行榜：把本小組摘要廣播出去 =====
+    // ===== v1.4 多組排行榜：把本房間摘要廣播出去 =====
     function publishRoomSummary(status = "playing") {
       if (!mqttClient || !mqttClient.connected || !activeRoomId) return;
       const score = updateScore();
       const topics = getRoomTopics();
       const payload = {
-        version: "v1.7",
-        sessionId: activeSessionId,
+        version: "v1.4",
         roomId: activeRoomId,
-        groupId: activeRoomId,
-        groupName: `小組 ${activeRoomId}`,
+        groupName: `房間 ${activeRoomId}`,
         redTerritory: score.red,
         greenTerritory: score.green,
         totalTerritory: score.total,
@@ -1633,73 +1593,7 @@
       mqttClient.publish(topics.leaderboard, text, { retain: false });
     }
 
-
-    // ===== v1.7 全場歸零：主畫面重置與控制廣播 =====
-    function resetMainGameState(reason = "全場歸零") {
-      try { window.speechSynthesis.cancel(); } catch(e) {}
-
-      state.currentTeam = "red";
-      state.readyTeam = null;
-      state.redSteps = 0;
-      state.greenSteps = 0;
-      state.occupied = {};
-      state.gameOver = false;
-      state.introPlaying = false;
-
-      const introOverlay = document.getElementById("introOverlay");
-      const introCardImage = document.getElementById("introCardImage");
-      const winModal = document.getElementById("winModal");
-      const selectBanner = document.getElementById("selectBanner");
-      if (introOverlay) introOverlay.classList.remove("show");
-      if (introCardImage) introCardImage.classList.remove("show");
-      if (winModal) winModal.classList.remove("show");
-      if (selectBanner) selectBanner.classList.remove("show");
-
-      d3.selectAll(".town")
-        .classed("red", false)
-        .classed("green", false)
-        .classed("ready", false)
-        .classed("selected", false);
-
-      setTeam("red");
-      updateUI();
-      document.getElementById("foodIcon").textContent = "🧭";
-      document.getElementById("townName").textContent = "尚未選擇";
-      document.getElementById("productName").textContent = "請先讓任一隊跑滿 10 步";
-      document.getElementById("featureText").textContent = "選擇鄉鎮後，這裡會顯示代表農產品與食農特色。";
-      document.getElementById("carbonText").textContent = "鼓勵吃在地、食當季，縮短食物里程。";
-      document.getElementById("allergenText").textContent = "依不同農產顯示食用提醒。";
-      document.getElementById("storyText").textContent = reason + "，本小組已回到初始狀態。";
-      debug(reason + "：主畫面已歸零");
-      publishRoomSummary("waiting");
-    }
-
-    function publishGlobalReset() {
-      const topics = getRoomTopics();
-      const payload = {
-        version: "v1.7",
-        action: "resetAll",
-        target: "all",
-        roomId: activeRoomId,
-        timestamp: Date.now()
-      };
-      resetMainGameState("教師執行全場歸零");
-      if (mqttClient && mqttClient.connected) {
-        mqttClient.publish(topics.controlAll, JSON.stringify(payload), { retain: false });
-        mqttClient.publish(topics.leaderboard, JSON.stringify(payload), { retain: false });
-      }
-    }
-
-    function handleControlMessage(payloadText) {
-      let data = {};
-      try { data = JSON.parse(payloadText); } catch(e) { return; }
-      if (data.action !== "resetAll" && data.action !== "resetRoom") return;
-      if (data.action === "resetRoom" && normalizeRoomId(data.roomId) !== activeRoomId) return;
-      resetMainGameState(data.action === "resetAll" ? "收到全場歸零指令" : "收到本小組歸零指令");
-    }
-
     function initRoomControls() {
-      activeSessionId = getInitialSessionId();
       activeRoomId = getInitialRoomId();
       updateRoomDisplay();
 
@@ -1708,18 +1602,7 @@
         newRoomBtn.onclick = () => {
           const newId = generateRoomId();
           localStorage.setItem("nantou-food-room-id", newId);
-          location.href = `${location.pathname}?session=${activeSessionId}&group=${newId}`;
-        };
-      }
-
-      const newSessionBtn = document.getElementById("newSessionBtn");
-      if (newSessionBtn) {
-        newSessionBtn.onclick = () => {
-          const newSession = generateSessionId();
-          const newGroup = generateRoomId();
-          localStorage.setItem("nantou-food-session-id", newSession);
-          localStorage.setItem("nantou-food-room-id", newGroup);
-          location.href = `${location.pathname}?session=${newSession}&group=${newGroup}`;
+          location.href = `${location.pathname}?room=${newId}`;
         };
       }
 
@@ -1734,14 +1617,6 @@
           } catch (e) {
             prompt("請複製玩家網址", url);
           }
-        };
-      }
-
-      const globalResetBtn = document.getElementById("globalResetBtn");
-      if (globalResetBtn) {
-        globalResetBtn.onclick = () => {
-          const ok = confirm("確定要全場歸零嗎？所有小組、玩家端與排行榜都會清空。是否繼續？");
-          if (ok) publishGlobalReset();
         };
       }
     }
@@ -1763,8 +1638,8 @@
       });
 
       mqttClient.on("connect", () => {
-        setMqttStatus(`MQTT 已連線｜${activeSessionId}｜${activeRoomId}`, true);
-        mqttClient.subscribe([topics.red, topics.green, topics.controlAll, topics.controlRoom], (err) => {
+        setMqttStatus(`MQTT 已連線｜${activeRoomId}`, true);
+        mqttClient.subscribe([topics.red, topics.green], (err) => {
           if (err) {
             setMqttStatus("MQTT 訂閱失敗", false);
             console.warn("[MQTT] 訂閱失敗", err);
@@ -1786,7 +1661,6 @@
         const text = message.toString();
         if (topic === topics.red) handleMobileStep("red", text);
         if (topic === topics.green) handleMobileStep("green", text);
-        if (topic === topics.controlAll || topic === topics.controlRoom) handleControlMessage(text);
       });
     }
 

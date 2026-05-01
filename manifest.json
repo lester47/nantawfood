@@ -1,8 +1,8 @@
 {
-  "name": "南投食農領地戰 v1.7",
-  "short_name": "食農v1.7",
-  "description": "南投食農領地戰 PWA，支援手機體感、小組代碼制與多組即時排行榜。",
-  "start_url": "./teacher.html",
+  "name": "南投食農小大使 v1.4 排行榜",
+  "short_name": "食農領地戰",
+  "description": "南投食農領地戰 PWA，支援手機體感、Room ID 房間制與多組即時排行榜。",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#fff7e6",

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>南投食農領地戰｜v1.7 小組排行榜與全場歸零</title>
+  <title>南投食農領地戰｜v1.4 多組排行榜</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2f855a">
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -15,50 +15,36 @@
   </style>
 </head>
 <body>
-  <header><div class="head"><div class="brand"><div class="logo">🏆</div><div><h1>南投食農領地戰｜小組排行榜</h1><div class="sub">v1.7 場次代碼＋小組代碼 即時競賽總覽｜MQTTGO.io｜支援全場歸零</div></div></div><div id="mqttStatus" class="pill offline">MQTT 連線中</div></div></header>
+  <header><div class="head"><div class="brand"><div class="logo">🏆</div><div><h1>南投食農領地戰｜多組排行榜</h1><div class="sub">v1.4 Room ID 即時競賽總覽｜MQTTGO.io</div></div></div><div id="mqttStatus" class="pill offline">MQTT 連線中</div></div></header>
   <main class="wrap">
     <div class="toolbar">
-      <input id="sessionInput" placeholder="輸入場次代碼，例如 S001" />
-      <input id="filterInput" placeholder="輸入小組代碼篩選，例如 A7K2；空白顯示全部" />
-      <button id="switchSessionBtn" style="background:#2563eb">切換場次</button>
-      <button id="newSessionBtn" style="background:#7c3aed">一鍵開新場</button>
+      <input id="filterInput" placeholder="輸入房號篩選，例如 A7K2；空白顯示全部" />
       <button id="clearBtn">清空畫面資料</button>
-      <button id="globalResetBtn" style="background:#dc2626">🧹 全場歸零</button>
       <a class="link" href="./index.html">回主畫面</a>
-      <a class="link" href="./teacher.html" style="background:#2563eb">教師控制台</a>
     </div>
     <section class="cards">
-      <div class="stat"><b>目前小組數</b><strong id="roomCount">0</strong></div>
+      <div class="stat"><b>目前房間數</b><strong id="roomCount">0</strong></div>
       <div class="stat"><b>最高總分</b><strong id="topScore">0</strong></div>
       <div class="stat"><b>最後更新</b><strong id="lastUpdate" style="font-size:24px">--:--:--</strong></div>
     </section>
     <section class="board">
-      <div class="board-head"><div>排名</div><div>小組</div><div>紅隊</div><div>綠隊</div><div>總佔領</div><div>總分</div><div>狀態</div></div>
-      <div id="boardBody"><div class="empty">等待各小組送出比賽摘要資料...</div></div>
+      <div class="board-head"><div>排名</div><div>房間</div><div>紅隊</div><div>綠隊</div><div>總佔領</div><div>總分</div><div>狀態</div></div>
+      <div id="boardBody"><div class="empty">等待各房間送出比賽摘要資料...</div></div>
     </section>
-    <div class="small">訂閱 Topic：nantou-food-race/場次代碼/+/summary 與 nantou-food-race/場次代碼/leaderboard/update。若沒有資料，請先讓某一小組完成一次攻佔。</div>
+    <div class="small">訂閱 Topic：nantou-food-race/+/summary 與 nantou-food-race/leaderboard/update。若沒有資料，請先讓某一房間完成一次攻佔。</div>
   </main>
 <script>
 const MQTT_SERVER = "wss://MQTTGO.io:8084/mqtt";
-const TOPIC_BASE = "nantou-food-race";
-let activeSessionId = new URLSearchParams(location.search).get("session") || localStorage.getItem("nantou-food-session-id") || "S001";
-function topicSummary(){ return `${TOPIC_BASE}/${activeSessionId}/+/summary`; }
-function topicUpdate(){ return `${TOPIC_BASE}/${activeSessionId}/leaderboard/update`; }
-function topicControlAll(){ return `${TOPIC_BASE}/${activeSessionId}/control/all`; }
-let mqttClient = null;
+const TOPIC_SUMMARY = "nantou-food-race/+/summary";
+const TOPIC_UPDATE = "nantou-food-race/leaderboard/update";
 const rooms = new Map();
 const $ = id => document.getElementById(id);
 function setMqttStatus(text, ok=false){ const el=$("mqttStatus"); el.textContent=text; el.classList.toggle("offline", !ok); }
 function fmtTime(ts){ const d=new Date(ts||Date.now()); return d.toLocaleTimeString("zh-TW",{hour12:false}); }
 function normalizeRoomId(v){ return String(v||"").trim().toUpperCase(); }
-function normalizeSessionId(v){ return String(v||"").trim().toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,18); }
-function generateSessionId(){ const d=new Date(); return `S${String(d.getFullYear()).slice(2)}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}-${Math.random().toString(36).slice(2,5).toUpperCase()}`; }
-function safeGroupTitle(r){ return String(r.groupName || r.groupDisplayName || `小組 ${r.roomId}`).replaceAll("房間","小組"); }
 function ingest(payloadText){
   let data; try{ data=JSON.parse(payloadText); }catch(e){ return; }
-  if (data.action === "resetAll") { rooms.clear(); render(); return; }
-  if (data.sessionId && normalizeSessionId(data.sessionId) !== activeSessionId) return;
-  const roomId = normalizeRoomId(data.roomId || data.groupId); if(!roomId) return; data.roomId = roomId; if(data.groupName) data.groupName = String(data.groupName).replaceAll("房間","小組");
+  const roomId = normalizeRoomId(data.roomId); if(!roomId) return;
   const old = rooms.get(roomId) || {};
   rooms.set(roomId, {...old, ...data, roomId, timestamp:data.timestamp||Date.now()});
   render();
@@ -72,7 +58,7 @@ function render(){
   $("topScore").textContent = list[0]?.totalScore || 0;
   $("lastUpdate").textContent = rooms.size ? fmtTime(Math.max(...Array.from(rooms.values()).map(r=>r.timestamp||0))) : "--:--:--";
   const body=$("boardBody");
-  if(!list.length){ body.innerHTML = '<div class="empty">目前沒有符合條件的小組資料</div>'; return; }
+  if(!list.length){ body.innerHTML = '<div class="empty">目前沒有符合條件的房間資料</div>'; return; }
   body.innerHTML = list.map((r,i)=>{
     const rankClass = i===0?'r1':i===1?'r2':i===2?'r3':'';
     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
@@ -83,7 +69,7 @@ function render(){
     const statusText = status==='finished'?'完成':status==='waiting'?'等待中':'進行中';
     return `<div class="row">
       <div class="rank ${rankClass}" data-label="排名">${medal}</div>
-      <div data-label="小組"><b>${safeGroupTitle(r)}</b><div class="small">場次 ${activeSessionId}｜${r.roomId}｜更新 ${fmtTime(r.timestamp)}</div></div>
+      <div data-label="房間"><b>${r.groupName || '房間 '+r.roomId}</b><div class="small">${r.roomId}｜更新 ${fmtTime(r.timestamp)}</div></div>
       <div data-label="紅隊">🔴 ${r.redTerritory||0}<div class="small">步數 ${r.redSteps||0}</div></div>
       <div data-label="綠隊">🟢 ${r.greenTerritory||0}<div class="small">步數 ${r.greenSteps||0}</div></div>
       <div data-label="總佔領">${total} / ${r.goal||13}<div class="bar"><i style="width:${percent}%"></i></div></div>
@@ -93,23 +79,15 @@ function render(){
   }).join('');
 }
 $("filterInput").addEventListener("input", render);
-$("sessionInput").value = activeSessionId;
-$("switchSessionBtn").onclick = () => { const s = normalizeSessionId($("sessionInput").value) || "S001"; localStorage.setItem("nantou-food-session-id", s); location.href = `leaderboard.html?session=${s}`; };
-$("newSessionBtn").onclick = () => { const s = generateSessionId(); localStorage.setItem("nantou-food-session-id", s); location.href = `leaderboard.html?session=${s}`; };
 $("clearBtn").onclick = () => { rooms.clear(); render(); };
-function clearKnownRetainedSummaries() { if (!mqttClient || !mqttClient.connected) return; rooms.forEach((_, roomId) => mqttClient.publish(`${TOPIC_BASE}/${activeSessionId}/${roomId}/summary`, "", { retain: true })); }
-function publishGlobalReset() { const ok = confirm("確定要全場歸零嗎？所有小組、玩家端與排行榜都會清空。是否繼續？"); if (!ok) return; const payload = { version: "v1.7", action: "resetAll", target: "all", timestamp: Date.now() }; clearKnownRetainedSummaries(); rooms.clear(); render(); if (mqttClient && mqttClient.connected) { mqttClient.publish(topicControlAll(), JSON.stringify({...payload, sessionId: activeSessionId}), { retain: false }); mqttClient.publish(topicUpdate(), JSON.stringify({...payload, sessionId: activeSessionId}), { retain: false }); } }
-$("globalResetBtn").onclick = publishGlobalReset;
-function handleControlMessage(payloadText) { let data = {}; try { data = JSON.parse(payloadText); } catch(e) { return; } if (data.action === "resetAll") { rooms.clear(); render(); setMqttStatus("已收到全場歸零｜排行榜已清空", true); } }
 function initMqtt(){
   if(typeof mqtt === "undefined"){ setMqttStatus("MQTT 套件未載入", false); return; }
   const client = mqtt.connect(MQTT_SERVER, { clientId: 'nantou-leaderboard-'+Math.random().toString(16).slice(2), clean:true, reconnectPeriod:2000, connectTimeout:8000 });
-  mqttClient = client;
-  client.on('connect', () => { setMqttStatus('MQTT 已連線｜排行榜監看中', true); client.subscribe([topicSummary(), topicUpdate(), topicControlAll()], err => { if(err) setMqttStatus('MQTT 訂閱失敗', false); }); });
+  client.on('connect', () => { setMqttStatus('MQTT 已連線｜排行榜監看中', true); client.subscribe([TOPIC_SUMMARY, TOPIC_UPDATE], err => { if(err) setMqttStatus('MQTT 訂閱失敗', false); }); });
   client.on('reconnect', () => setMqttStatus('MQTT 重新連線中', false));
   client.on('offline', () => setMqttStatus('MQTT 離線', false));
   client.on('error', err => { setMqttStatus('MQTT 錯誤', false); console.warn(err); });
-  client.on('message', (topic,msg) => { const text = msg.toString(); if (topic === topicControlAll()) handleControlMessage(text); else ingest(text); });
+  client.on('message', (topic,msg) => ingest(msg.toString()));
 }
 initMqtt(); render();
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{})); }
