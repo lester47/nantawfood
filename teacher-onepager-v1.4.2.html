@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>v1.4.2 老師快速版（一頁式）</title>
+  <style>
+    :root {
+      --bg: #f6f1e4;
+      --paper: #fffdf7;
+      --ink: #213126;
+      --muted: #5c6f62;
+      --green: #2f855a;
+      --green-2: #1f6a46;
+      --gold: #e7b95a;
+      --line: #ded2b2;
+      --soft: #edf5ee;
+      --warn: #fff3d9;
+      --shadow: 0 16px 40px rgba(54, 46, 24, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(231,185,90,.28), transparent 28%),
+        linear-gradient(135deg, #f7f0df 0%, #eef6eb 55%, #eef5fb 100%);
+      color: var(--ink);
+      line-height: 1.45;
+      padding: 24px;
+    }
+
+    .sheet {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 28px 32px 22px;
+      background: linear-gradient(135deg, rgba(47,133,90,.98), rgba(35,72,48,.98));
+      color: #fff;
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.14);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+
+    h1 {
+      margin: 12px 0 8px;
+      font-size: 34px;
+      line-height: 1.1;
+      letter-spacing: -.03em;
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 16px;
+      color: rgba(255,255,255,.88);
+      max-width: 760px;
+    }
+
+    .callout {
+      min-width: 270px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 18px;
+      padding: 14px 16px;
+      backdrop-filter: blur(4px);
+    }
+
+    .callout b {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .callout p {
+      margin: 0;
+      font-size: 14px;
+      color: rgba(255,255,255,.92);
+    }
+
+    .content {
+      padding: 24px 28px 28px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.14fr .86fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fffef9;
+      padding: 18px 18px 16px;
+    }
+
+    .card.soft { background: var(--soft); }
+    .card.warn { background: var(--warn); }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      color: var(--green-2);
+      letter-spacing: -.02em;
+    }
+
+    .big-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .big-item {
+      border-radius: 18px;
+      padding: 14px;
+      background: #fff;
+      border: 1px solid var(--line);
+      min-height: 108px;
+    }
+
+    .num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--green);
+      color: #fff;
+      font-weight: 1000;
+      margin-bottom: 10px;
+    }
+
+    .big-item strong,
+    .step strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    .muted { color: var(--muted); }
+
+    .urls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .url-row {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+    }
+
+    .url-row b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      word-break: break-all;
+      color: #163c27;
+    }
+
+    .check-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .check-grid ul,
+    .mini ul,
+    .steps,
+    .speak,
+    .footer-note ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .check-grid li,
+    .mini li,
+    .step,
+    .speak li,
+    .footer-note li { margin: 6px 0; }
+
+    .steps {
+      list-style: none;
+      padding: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .step-no {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--gold), #f4cf83);
+      display: grid;
+      place-items: center;
+      font-weight: 1000;
+      color: #4d3a10;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--green-2);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .quote {
+      font-size: 15px;
+      font-weight: 900;
+      color: #284433;
+      background: linear-gradient(135deg, rgba(47,133,90,.11), rgba(231,185,90,.15));
+      border: 1px dashed #c8b47c;
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      border-top: 1px dashed var(--line);
+      padding-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      .grid, .check-grid, .mini-grid, .big-3 { grid-template-columns: 1fr; }
+      h1 { font-size: 28px; }
+      .hero, .content { padding-left: 18px; padding-right: 18px; }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+        font-size: 11pt;
+      }
+      .sheet {
+        width: 100%;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .hero {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      .card, .big-item, .step, .url-row, .quote {
+        break-inside: avoid;
+      }
+      code { font-size: 10pt; }
+    }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <span class="eyebrow">v1.4.2 教學現場專用版</span>
+          <h1>老師快速版（一頁式）</h1>
+          <p class="subtitle">給老師現場直接照著用：先開主畫面、確認小組代碼、讓學生用同一組代碼進手機控制器開始跑步。不穩就改手動送步。</p>
+        </div>
+        <aside class="callout">
+          <b>一句話重點</b>
+          <p>老師開主畫面 → 學生用同一組小組代碼進手機頁 → 選隊後開始跑；沒反應就按手動送出一步。</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="content">
+      <div class="grid">
+        <div class="stack">
+          <article class="card soft">
+            <h2>一、老師只要記住 3 件事</h2>
+            <div class="big-3">
+              <div class="big-item">
+                <div class="num">1</div>
+                <strong>開主畫面</strong>
+                <div class="muted">投影到全班，確認有看到 MQTT 已連線。</div>
+              </div>
+              <div class="big-item">
+                <div class="num">2</div>
+                <strong>看小組代碼</strong>
+                <div class="muted">讓學生手機上的小組代碼和主畫面完全一致。</div>
+              </div>
+              <div class="big-item">
+                <div class="num">3</div>
+                <strong>開始跑步</strong>
+                <div class="muted">學生選紅隊或綠隊，按開始體感；不穩就改手動送步。</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>二、三個網址</h2>
+            <div class="urls">
+              <div class="url-row">
+                <b>主畫面（老師投影）</b>
+                <code>https://lester47.github.io/nantawfood/</code>
+              </div>
+              <div class="url-row">
+                <b>手機控制器（學生操作）</b>
+                <code>https://lester47.github.io/nantawfood/player.html?room=ASGQ</code>
+                <div class="muted">把 <code>ASGQ</code> 換成主畫面上的小組代碼。</div>
+              </div>
+              <div class="url-row">
+                <b>排行榜（老師看全部小組）</b>
+                <code>https://lester47.github.io/nantawfood/leaderboard.html</code>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>三、現場操作流程</h2>
+            <ol class="steps">
+              <li class="step">
+                <div class="step-no">1</div>
+                <div>
+                  <strong>老師開主畫面</strong>
+                  確認看到 <code>MQTT 已連線</code>，並記下目前的小組代碼。
+                </div>
+              </li>
+              <li class="step">
+                <div class="step-no">2</div>
+                <div>
+                  <strong>學生開手機控制器</strong>
+                  輸入或確認相同小組代碼，選 <code>紅隊</code> 或 <code>綠隊</code>。
+                </div>
+              </li>
+              <li class="step">
+                <div class="step-no">3</div>
+                <div>
+                  <strong>學生開始送步</strong>
+                  按 <code>開始體感</code>。如果沒反應，直接按 <code>手動送出一步</code>。
+                </div>
+              </li>
+              <li class="step">
+                <div class="step-no">4</div>
+                <div>
+                  <strong>老師看主畫面反應</strong>
+                  檢查紅隊 / 綠隊步數是否增加，是否跑滿 10 步進入地圖互動狀態。
+                </div>
+              </li>
+              <li class="step">
+                <div class="step-no">5</div>
+                <div>
+                  <strong>需要比較各組時開排行榜</strong>
+                  看各小組是否上線、誰分數最高、最後更新時間是否正常。
+                </div>
+              </li>
+            </ol>
+          </article>
+        </div>
+
+        <div class="stack">
+          <article class="card">
+            <h2>四、上課前 30 秒檢查</h2>
+            <div class="check-grid">
+              <div>
+                <strong>老師端</strong>
+                <ul>
+                  <li>主畫面已開啟</li>
+                  <li>右上角有 <code>MQTT 已連線</code></li>
+                  <li>已記下小組代碼</li>
+                  <li>投影正常</li>
+                </ul>
+              </div>
+              <div>
+                <strong>學生端</strong>
+                <ul>
+                  <li>手機已開控制器</li>
+                  <li>小組代碼和主畫面一致</li>
+                  <li>已選紅隊或綠隊</li>
+                </ul>
+              </div>
+            </div>
+          </article>
+
+          <article class="card warn">
+            <h2>五、老師最常用的按鈕</h2>
+            <div class="mini-grid">
+              <div class="mini">
+                <strong>主畫面</strong>
+                <ul>
+                  <li><code>手機控制器｜小組 XXXX</code></li>
+                  <li><code>開啟排行榜</code></li>
+                  <li><code>半馬 7 點</code></li>
+                  <li><code>全馬 13 點</code></li>
+                  <li><code>重新開始</code></li>
+                </ul>
+              </div>
+              <div class="mini">
+                <strong>手機頁</strong>
+                <ul>
+                  <li><code>紅隊 / 綠隊</code></li>
+                  <li><code>開始體感</code></li>
+                  <li><code>手動送出一步</code></li>
+                  <li><code>停止體感</code></li>
+                </ul>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <h2>六、最常見問題</h2>
+            <div class="mini-grid">
+              <div class="mini">
+                <strong>主畫面沒反應</strong>
+                <ul>
+                  <li>檢查網路</li>
+                  <li>檢查是否有 <code>MQTT 已連線</code></li>
+                  <li>檢查小組代碼是否一致</li>
+                  <li>確認學生有按 <code>開始體感</code></li>
+                </ul>
+              </div>
+              <div class="mini">
+                <strong>體感不穩 / 排行榜沒資料</strong>
+                <ul>
+                  <li>先改按 <code>手動送出一步</code></li>
+                  <li>確認至少有一組真的有送出資料</li>
+                  <li>必要時重新整理排行榜</li>
+                </ul>
+              </div>
+            </div>
+          </article>
+
+          <article class="card soft">
+            <h2>七、老師口令版</h2>
+            <ol class="speak">
+              <li>打開手機連結</li>
+              <li>確認小組代碼和投影一樣</li>
+              <li>選紅隊或綠隊</li>
+              <li>按開始體感</li>
+              <li>沒反應就按手動送出一步</li>
+            </ol>
+            <div class="pill-row">
+              <span class="pill">先投影主畫面</span>
+              <span class="pill">先找 1 位學生測試</span>
+              <span class="pill">主畫面有反應後全班再開始</span>
+            </div>
+          </article>
+
+          <article class="quote">
+            最穩的開場順序：先投影主畫面 → 公布小組代碼 → 找 1 位學生測試送步 → 主畫面有反應後，全班再開始。
+          </article>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        <strong>建議用途：</strong>
+        <ul>
+          <li>可直接在瀏覽器打開後列印</li>
+          <li>適合印成 A4 給老師或助教現場參考</li>
+          <li>如需更正式列印版，可再做成橫式講義或加上 QR Code 版本</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
