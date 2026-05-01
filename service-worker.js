@@ -1,5 +1,5 @@
-const CACHE_NAME = "nantou-food-v1.5-leaderboard-cache-20260430";
-const CORE_ASSETS = ["./", "./index.html", "./player.html", "./leaderboard.html", "./teacher.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./images/renai.png", "./images/guoxing.png", "./images/caotun.png", "./images/nantou.png", "./images/zhongliao.png", "./images/puli.png", "./images/yuchi.png", "./images/mingjian.png", "./images/jiji.png", "./images/shuili.png", "./images/lugu.png", "./images/zhushan.png", "./images/xinyi.png"];
-self.addEventListener("install", event => { self.skipWaiting(); event.waitUntil(caches.open(CACHE_NAME).then(cache => Promise.allSettled(CORE_ASSETS.map(asset => cache.add(asset))))); });
-self.addEventListener("activate", event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim())); });
-self.addEventListener("fetch", event => { const req = event.request; if (req.method !== "GET") return; event.respondWith(fetch(req).then(response => { const copy = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(req, copy)).catch(() => {}); return response; }).catch(() => caches.match(req).then(cached => cached || caches.match("./index.html")))); });
+const CACHE_NAME = "nantou-food-v1.6-learning-groups";
+const ASSETS = ["./","./index.html","./player.html","./leaderboard.html","./teacher.html","./manifest.json"];
+self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS).catch(()=>null))); });
+self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k!==CACHE_NAME ? caches.delete(k) : null)))); self.clients.claim(); });
+self.addEventListener("fetch", e => { if(e.request.method !== "GET") return; e.respondWith(fetch(e.request).catch(() => caches.match(e.request).then(r => r || caches.match("./index.html")))); });

@@ -1,9 +1,7 @@
 {
-  "name": "南投食農小大使 v1.5 排行榜",
+  "name": "南投食農領地戰 v1.6",
   "short_name": "食農領地戰",
-  "description": "南投食農領地戰 PWA，支援手機體感、小組代碼制與多組即時排行榜。",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
   "background_color": "#fff7e6",
   "theme_color": "#2f855a",

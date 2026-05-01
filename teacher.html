@@ -3,22 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>教師控制台｜南投食農領地戰 v1.5</title>
+<title>教師控制台｜南投食農領地戰 v1.6</title>
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
-body{margin:0;font-family:"Microsoft JhengHei",system-ui,sans-serif;background:linear-gradient(135deg,#fff3bf,#e8f7ec);color:#203521}header{background:#263527;color:white;padding:24px}.wrap{max-width:980px;margin:auto;padding:24px}.card{background:#fffdf4;border:1px solid #e7dcc2;border-radius:28px;padding:24px;margin:18px 0;box-shadow:0 14px 36px #0002}h1,h2{margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}button{border:0;border-radius:18px;padding:18px;font-size:20px;font-weight:900;color:white;cursor:pointer}.start{background:#16a34a}.pause{background:#f59e0b}.resume{background:#2563eb}.end{background:#7f1d1d}.reset{background:#dc2626}.dark{background:#263527}.purple{background:#6d28d9}textarea,input{width:100%;box-sizing:border-box;border:1px solid #d8c9a6;border-radius:16px;padding:14px;font-size:18px;font-weight:800}textarea{min-height:120px}.pill{display:inline-block;background:#ffffff22;border-radius:999px;padding:10px 16px;font-weight:900}.log{background:#1f2937;color:#d1fae5;border-radius:18px;padding:16px;height:180px;overflow:auto;font-family:Consolas,monospace}@media(max-width:720px){.grid{grid-template-columns:1fr}}
+body{margin:0;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;background:linear-gradient(135deg,#fff1b8,#e9f8ee);color:#17351f}
+header{background:#263527;color:white;padding:22px 28px}.inner{max-width:1120px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{display:flex;gap:14px;align-items:center}.icon{width:58px;height:58px;border-radius:20px;background:linear-gradient(135deg,#60a5fa,#22c55e);display:grid;place-items:center;font-size:32px}h1{margin:0;font-size:30px}.sub{font-size:13px;color:#d8f3dc;font-weight:900;margin-top:4px}.pill{background:rgba(255,255,255,.15);padding:10px 16px;border-radius:999px;font-weight:1000}
+main{max-width:1120px;margin:auto;padding:24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{background:#fffdf4;border:1px solid #e7dcc2;border-radius:30px;padding:24px;box-shadow:0 18px 44px rgba(0,0,0,.12)}.card h2{margin:0 0 16px;font-size:26px}.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}button{border:0;border-radius:22px;padding:18px;color:white;font-size:20px;font-weight:1000;cursor:pointer}.start{background:#16a34a}.pause{background:#f59e0b}.resume{background:#2563eb}.end{background:#7f1d1d}.reset{background:#dc2626}.dark{background:#263527}.purple{background:#6d28d9}
+textarea,input{width:100%;padding:16px;border-radius:18px;border:1px solid #dacaa6;font-family:inherit;font-size:18px;font-weight:900;background:white;margin-bottom:10px}textarea{min-height:120px;resize:vertical}.links{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.note{margin-top:14px;padding:16px;border-radius:20px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;line-height:1.7;font-weight:900}.log{height:220px;overflow:auto;background:#1f2937;color:#d1fae5;border-radius:20px;padding:16px;font-family:Consolas,monospace;font-size:14px;line-height:1.6}
+@media(max-width:850px){.inner,.grid,.btn-grid,.links{grid-template-columns:1fr;display:grid}}
 </style>
 </head>
 <body>
-<header><h1>🧑‍🏫 教師控制台</h1><div class="pill" id="mqttStatus">MQTT 連線中</div><p>v1.5｜小組競賽主控：開始、暫停、繼續、結束、公告、全場歸零</p></header>
-<main class="wrap">
-<section class="card"><h2>全班控制</h2><div class="grid"><button class="start" onclick="sendControl('start')">▶ 全班開始</button><button class="pause" onclick="sendControl('pause')">⏸ 全班暫停</button><button class="resume" onclick="sendControl('resume')">⏯ 全班繼續</button><button class="end" onclick="sendControl('end')">⛔ 全班結束</button></div><button class="reset" style="width:100%;margin-top:14px" onclick="resetAll()">🧹 全場歸零</button></section>
-<section class="card"><h2>全班公告</h2><textarea id="msg" placeholder="例如：剩下30秒，請準備攻佔下一個鄉鎮！"></textarea><button class="purple" style="width:100%;margin-top:14px" onclick="sendMessage()">📣 發送公告</button></section>
-<section class="card"><h2>快速連結</h2><input id="groupInput" placeholder="輸入小組代碼，例如 A7K2"><div class="grid" style="margin-top:14px"><button class="dark" onclick="openMain()">開小組主畫面</button><button class="dark" onclick="copyPlayer()">複製玩家網址</button><button class="dark" onclick="location.href='leaderboard.html'">小組排行榜</button><button class="dark" onclick="location.href='index.html'">回主畫面</button></div></section>
-<section class="card"><h2>控制紀錄</h2><div id="log" class="log"></div></section>
+<header><div class="inner"><div class="brand"><div class="icon">🧑‍🏫</div><div><h1>教師控制台</h1><div class="sub">v1.6｜班級／小組名稱／小組代碼｜開始／暫停／公告／全場歸零</div></div></div><div id="mqttStatus" class="pill">MQTT 連線中</div></div></header>
+<main>
+<div class="grid">
+<section class="card">
+<h2>全班活動控制</h2>
+<div class="btn-grid">
+<button class="start" onclick="sendControl('start')">▶ 全班開始</button>
+<button class="pause" onclick="sendControl('pause')">⏸ 全班暫停</button>
+<button class="resume" onclick="sendControl('resume')">⏯ 全班繼續</button>
+<button class="end" onclick="sendControl('end')">⛔ 全班結束</button>
+</div>
+<button class="reset" style="width:100%;margin-top:14px" onclick="resetAll()">🧹 全場歸零</button>
+<div class="note">v1.6 新增班級與小組名稱欄位，排行榜可以顯示「六甲 向日葵隊（A7K2）」這類教育現場更自然的命名。</div>
+</section>
+
+<section class="card">
+<h2>全班公告</h2>
+<textarea id="announceText" placeholder="例如：剩下30秒！請準備攻佔下一個鄉鎮。"></textarea>
+<button class="purple" style="width:100%;margin-top:14px" onclick="sendAnnouncement()">📣 發送公告</button>
+</section>
+
+<section class="card">
+<h2>建立小組連結</h2>
+<input id="schoolName" placeholder="學校或活動名稱，例如 鯉魚國小">
+<input id="className" placeholder="班級名稱，例如 六甲">
+<input id="groupName" placeholder="小組名稱，例如 向日葵隊">
+<input id="groupInput" placeholder="小組代碼，例如 A7K2；空白會自動產生">
+<div class="links">
+<button class="dark" onclick="openMain()">開啟小組主畫面</button>
+<button class="dark" onclick="copyPlayer()">複製玩家網址</button>
+<button class="dark" onclick="location.href='leaderboard.html'">查看排行榜</button>
+<button class="dark" onclick="location.href='index.html'">回主畫面</button>
+</div>
+<div class="note">玩家網址會帶入 school、class、groupName、group 參數，主畫面與排行榜會自動採用。</div>
+</section>
+
+<section class="card">
+<h2>控制紀錄</h2>
+<div id="log" class="log"></div>
+</section>
+</div>
 </main>
 <script>
-const MQTT_URL="wss://MQTTGO.io:8084/mqtt",BASE="nantou-food-race",CONTROL=`${BASE}/control/all`;let client=null;const $=id=>document.getElementById(id);function log(t){$("log").innerHTML=`[${new Date().toLocaleTimeString('zh-TW',{hour12:false})}] ${t}<br>`+$("log").innerHTML}client=mqtt.connect(MQTT_URL,{clientId:"teacher-"+Math.random().toString(16).slice(2),clean:true,reconnectPeriod:2000});client.on("connect",()=>{$("mqttStatus").textContent="MQTT 已連線｜教師主控中";log("MQTT 已連線")});client.on("reconnect",()=>{$("mqttStatus").textContent="MQTT 重連中"});function pub(p){if(!client||!client.connected){alert("MQTT尚未連線");return}client.publish(CONTROL,JSON.stringify({...p,target:"all",timestamp:Date.now(),source:"teacher",version:"v1.5"}));log("送出："+p.action)}function sendControl(a){pub({action:a})}function resetAll(){if(confirm("確定要全場歸零嗎？"))pub({action:"resetAll"})}function sendMessage(){pub({action:"message",text:$("msg").value.trim()||"請注意教師指令。"})}function group(){return $("groupInput").value.trim().toUpperCase()||Math.random().toString(36).slice(2,6).toUpperCase()}function openMain(){location.href=`index.html?room=${group()}`}async function copyPlayer(){const u=`${location.origin}${location.pathname.replace('teacher.html','')}player.html?room=${group()}`;try{await navigator.clipboard.writeText(u);alert('已複製：\n'+u)}catch(e){prompt('請複製',u)}}
+const MQTT_URL="wss://MQTTGO.io:8084/mqtt", BASE_TOPIC="nantou-food-race", CONTROL_ALL_TOPIC=`${BASE_TOPIC}/control/all`;
+let client=null; const $=id=>document.getElementById(id);
+function log(text){const t=new Date().toLocaleTimeString("zh-TW",{hour12:false});$("log").innerHTML=`[${t}] ${text}<br>`+$("log").innerHTML;}
+function setupMqtt(){client=mqtt.connect(MQTT_URL,{clientId:"nantou-teacher-v16-"+Math.random().toString(16).slice(2),clean:true,connectTimeout:5000,reconnectPeriod:2000});client.on("connect",()=>{$("mqttStatus").textContent="MQTT 已連線｜教師主控中";$("mqttStatus").style.background="rgba(34,197,94,.22)";log("MQTT 已連線");});client.on("reconnect",()=>{$("mqttStatus").textContent="MQTT 重連中";log("MQTT 重連中");});client.on("error",()=>{$("mqttStatus").textContent="MQTT 錯誤";log("MQTT 錯誤");});}
+function publish(payload){if(!client||!client.connected){alert("MQTT 尚未連線");return false;}client.publish(CONTROL_ALL_TOPIC,JSON.stringify(payload));return true;}
+function sendControl(action){const payload={action,target:"all",timestamp:Date.now(),source:"teacher-console",version:"v1.6"};if(publish(payload)){log("送出控制指令："+action);}}
+function sendAnnouncement(){const text=$("announceText").value.trim()||"請注意教師指令，準備下一階段任務。";const payload={action:"message",text,target:"all",timestamp:Date.now(),source:"teacher-console",version:"v1.6"};if(publish(payload)){log("發送公告："+text);}}
+function resetAll(){if(!confirm("確定要全場歸零嗎？所有小組與玩家端都會回到初始狀態。"))return;sendControl("resetAll");}
+function rand(){return Math.random().toString(36).substring(2,6).toUpperCase()}
+function getParams(){const group=($("groupInput").value.trim().toUpperCase()||rand());const params=new URLSearchParams();params.set("group",group); if($("schoolName").value.trim())params.set("school", $("schoolName").value.trim()); if($("className").value.trim())params.set("class", $("className").value.trim()); if($("groupName").value.trim())params.set("groupName", $("groupName").value.trim()); return params.toString();}
+function openMain(){location.href=`index.html?${getParams()}`}
+async function copyPlayer(){const qs=getParams();const url=`${location.origin}${location.pathname.replace("teacher.html","")}player.html?${qs}`;try{await navigator.clipboard.writeText(url);alert("已複製玩家網址：\\n"+url)}catch(e){prompt("請複製玩家網址",url)}}
+setupMqtt();
 </script>
 </body>
 </html>
