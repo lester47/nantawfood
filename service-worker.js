@@ -1,4 +1,4 @@
-const CACHE_NAME = "nantou-food-v1.4.2-classroom-cache-20260501-homepage-teacher-link";
+const CACHE_NAME = "nantou-food-v1.5.0-ai-integration-cache-20260502";
 const CORE_ASSETS = ["./", "./index.html", "./player.html", "./leaderboard.html", "./teacher-onepager-v1.4.2.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./images/renai.png", "./images/guoxing.png", "./images/caotun.png", "./images/nantou.png", "./images/zhongliao.png", "./images/puli.png", "./images/yuchi.png", "./images/mingjian.png", "./images/jiji.png", "./images/shuili.png", "./images/lugu.png", "./images/zhushan.png", "./images/xinyi.png"];
 self.addEventListener("install", event => { self.skipWaiting(); event.waitUntil(caches.open(CACHE_NAME).then(cache => Promise.allSettled(CORE_ASSETS.map(asset => cache.add(asset))))); });
 self.addEventListener("activate", event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim())); });
