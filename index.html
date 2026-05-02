@@ -1047,7 +1047,10 @@
       aiAsking: false
     };
 
-    const AI_API_BASE = `${location.protocol}//${location.hostname}:8000/api/v1`;
+    const AI_API_BASE = (() => {
+      if (location.protocol === "file:") return "http://127.0.0.1:8000/api/v1";
+      return `${location.protocol}//${location.hostname}:8000/api/v1`;
+    })();
     const townToProductSlug = {
       "埔里鎮": "puli-guava",
       "鹿谷鄉": "lugu-oolong-tea",
@@ -1324,11 +1327,6 @@
 
     function openAiRoundOrReset(town, team) {
       const productSlug = townToProductSlug[town];
-      if (!productSlug) {
-        $("storyText").textContent = `${town} 的 AI 問答即將上線，先進入下一回合。`;
-        resetRoundAfterIntro(town, team);
-        return;
-      }
 
       state.aiAsking = true;
       updateUI();
@@ -1341,6 +1339,8 @@
       $("aiAnswerText").textContent = "";
       $("aiSourcesText").textContent = "";
       $("aiContinueBtn").style.display = "none";
+      $("aiAskBtn").disabled = false;
+      $("aiAskBtn").textContent = "送出 AI 問題";
       $("aiModal").classList.add("show");
 
       const finishAiRound = () => {
@@ -1355,6 +1355,17 @@
       };
 
       $("aiContinueBtn").onclick = finishAiRound;
+
+      if (!productSlug) {
+        $("aiStatusText").textContent = "此鄉鎮尚未接到後端 AI 食材資料，先使用課堂引導模式。";
+        $("aiAnswerText").textContent = `目前 ${town} 還沒完成 API mapping。你可以請學生先回答：這項食材跟在地環境有什麼關係？`;
+        $("aiSourcesText").textContent = "來源：classroom-guide";
+        $("aiAnswerBox").style.display = "block";
+        $("aiContinueBtn").style.display = "inline-block";
+        $("aiAskBtn").disabled = true;
+        $("aiAskBtn").textContent = "此鄉鎮 AI 即將上線";
+        return;
+      }
 
       $("aiAskBtn").onclick = async () => {
         const question = $("aiQuestionInput").value.trim();
