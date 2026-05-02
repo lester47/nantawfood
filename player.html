@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#2f855a" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <title>南投食農領地戰｜v1.4.2 手機體感控制器</title>
+  <title>南投食農領地戰｜v1.5.0 AI 關卡整合版手機控制器</title>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     :root { --red:#ef4444; --green:#16a34a; --ink:#263527; --paper:#fffdf4; --gold:#f59e0b; }
@@ -43,7 +43,7 @@
   <main class="app">
     <section class="card">
       <h1>📱 手機體感控制器</h1>
-      <div class="sub">v1.4.2 教學現場專用版｜MQTTGO.io</div>
+      <div class="sub">v1.5.0 AI 關卡整合版｜MQTTGO.io</div>
       <div class="status-grid">
         <div id="mqttStatus" class="pill bad">MQTT 連線中</div>
         <div id="sensorStatus" class="pill bad">感測器未啟動</div>
@@ -82,11 +82,11 @@
     function initRoomId() { const params = new URLSearchParams(location.search); const fromUrl = normalizeRoomId(params.get("room")); const saved = normalizeRoomId(localStorage.getItem("nantou-food-room-id")); roomId = fromUrl || saved || "A7K2"; localStorage.setItem("nantou-food-room-id", roomId); $("roomInput").value = roomId; }
     function setMqttStatus(text, ok) { const el = $("mqttStatus"); el.textContent = text; el.classList.toggle("ok", !!ok); el.classList.toggle("bad", !ok); }
     function setSensorStatus(text, ok) { const el = $("sensorStatus"); el.textContent = text; el.classList.toggle("ok", !!ok); el.classList.toggle("bad", !ok); }
-    function debug(text) { $("debugText").textContent = text; console.log("[v1.4.2 player]", text); }
+    function debug(text) { $("debugText").textContent = text; console.log("[v1.5.0 player]", text); }
     function setTeam(nextTeam) { team = nextTeam; $("redBtn").classList.toggle("active", team === "red"); $("greenBtn").classList.toggle("active", team === "green"); debug(`目前隊伍：${team === "red" ? "紅隊" : "綠隊"}`); }
     function getTopic() { roomId = normalizeRoomId($("roomInput").value) || "A7K2"; localStorage.setItem("nantou-food-room-id", roomId); $("roomInput").value = roomId; return `${TOPIC_BASE}/${roomId}/${team}`; }
     function updateCounter() { $("stepCount").textContent = totalSteps; $("stepBar").style.width = `${Math.min(100, (totalSteps % 10) * 10)}%`; }
-    function sendStep() { if (!client || !client.connected) { debug("MQTT 尚未連線，無法送出步數。請等候或重新整理。"); return; } const payload = { roomId: normalizeRoomId($("roomInput").value) || "A7K2", team, playerId: `mobile-${team}`, steps: 1, totalSteps: totalSteps + 1, timestamp: Date.now(), mode: "mobile", version: "v1.4.2" }; client.publish(getTopic(), JSON.stringify(payload)); totalSteps++; updateCounter(); if (navigator.vibrate) navigator.vibrate(45); debug(`已送出：小組 ${payload.roomId}｜${team === "red" ? "紅隊" : "綠隊"} +1`); }
+    function sendStep() { if (!client || !client.connected) { debug("MQTT 尚未連線，無法送出步數。請等候或重新整理。"); return; } const payload = { roomId: normalizeRoomId($("roomInput").value) || "A7K2", team, playerId: `mobile-${team}`, steps: 1, totalSteps: totalSteps + 1, timestamp: Date.now(), mode: "mobile", version: "v1.5.0" }; client.publish(getTopic(), JSON.stringify(payload)); totalSteps++; updateCounter(); if (navigator.vibrate) navigator.vibrate(45); debug(`已送出：小組 ${payload.roomId}｜${team === "red" ? "紅隊" : "綠隊"} +1`); }
     function initMqtt() { if (typeof mqtt === "undefined") { setMqttStatus("MQTT 套件未載入", false); debug("mqtt.js 未載入，請確認網路。"); return; } const clientId = `nantou-player-${Math.random().toString(16).slice(2)}`; client = mqtt.connect(MQTT_SERVER, { clientId, clean: true, reconnectPeriod: 2000, connectTimeout: 8000 }); client.on("connect", () => { setMqttStatus("MQTT 已連線", true); debug(`已連線 MQTTGO.io，小組：${roomId}`); }); client.on("reconnect", () => setMqttStatus("MQTT 重連中", false)); client.on("offline", () => setMqttStatus("MQTT 離線", false)); client.on("error", err => { setMqttStatus("MQTT 錯誤", false); console.warn(err); }); }
     async function requestMotionPermissionIfNeeded() { if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") { const permission = await DeviceMotionEvent.requestPermission(); return permission === "granted"; } return true; }
     async function startSensor() { const allowed = await requestMotionPermissionIfNeeded().catch(() => false); if (!allowed) { setSensorStatus("感測器未授權", false); alert("需要允許手機動作感測器，才能使用體感控制。可以先用手動送出一步測試 MQTT。"); return; } running = true; window.removeEventListener("devicemotion", handleMotion); window.addEventListener("devicemotion", handleMotion); setSensorStatus("感測器已啟動", true); debug("感測器已啟動，請原地跑步或晃動手機。"); }

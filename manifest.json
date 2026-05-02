@@ -1,7 +1,7 @@
 {
-  "name": "南投食農小大使 v1.4.2 教學現場專用版",
+  "name": "南投食農小大使 v1.5.0 AI 關卡整合版",
   "short_name": "食農領地戰",
-  "description": "南投食農領地戰 PWA v1.4.2 教學現場專用版，支援手機體感、小組代碼與多組即時排行榜。",
+  "description": "南投食農領地戰 PWA v1.5.0 AI 關卡整合版，支援手機體感、小組代碼、多組即時排行榜與遊戲內 AI 問答關卡。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

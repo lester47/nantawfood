@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>南投食農小大使｜食農領地戰 v1.4.2 教學現場專用版</title>
+  <title>南投食農小大使｜食農領地戰 v1.5.0 AI 關卡整合版</title>
   <meta name="theme-color" content="#2f855a" />
   <meta name="description" content="南投食農領地戰 PWA 可安裝版，結合紅綠隊競賽、南投13鄉鎮食農地圖與離線展示。" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -812,7 +812,7 @@
         <a id="playerLink" class="install-btn show" href="./player.html" target="_blank" style="text-decoration:none;display:inline-block;">📱 開啟手機控制器</a>
         <a id="leaderboardLink" class="install-btn show" href="./leaderboard.html" target="_blank" style="text-decoration:none;display:inline-block;">🏆 開啟排行榜</a>
         <a id="teacherGuideLink" class="install-btn show" href="./teacher-onepager-v1.4.2.html" target="_blank" style="text-decoration:none;display:inline-block;">🧑‍🏫 老師快速版</a>
-        <div class="status-pill">v1.4.2 教學現場專用版｜主畫面、手機體感、排行榜、老師快速版</div>
+        <div class="status-pill">v1.5.0 AI 關卡整合版｜主畫面、手機體感、排行榜、AI 問答關卡</div>
       </div>
     </div>
   </header>
@@ -933,6 +933,29 @@
     </div>
   </div>
 
+  <div id="aiModal" class="modal">
+    <div class="modal-box" style="max-width:680px;text-align:left;">
+      <div class="trophy" style="margin-bottom:8px;">🤖</div>
+      <h2 id="aiModalTitle">AI 食農問答</h2>
+      <p id="aiModalSubtitle" style="margin-top:6px;">請輸入一個問題，讓 AI 針對剛剛攻佔的食材回答。</p>
+      <label for="aiQuestionInput" style="display:block;font-weight:900;margin:8px 0 6px;">你的提問</label>
+      <textarea id="aiQuestionInput" style="width:100%;min-height:88px;border:2px solid #e7dcc2;border-radius:14px;padding:10px;font-size:16px;font-family:inherit;">這項食材為什麼適合食農課？</textarea>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+        <button id="aiAskBtn" style="background:#0f766e;">送出 AI 問題</button>
+        <button id="aiSkipBtn" style="background:#64748b;">略過 AI，進入下一回合</button>
+      </div>
+      <p id="aiStatusText" style="margin:10px 0 0;color:#334155;font-weight:800;">準備就緒</p>
+      <div id="aiAnswerBox" style="margin-top:10px;padding:12px;border-radius:12px;background:#f8fafc;border:1px solid #cbd5e1;display:none;">
+        <div style="font-weight:900;margin-bottom:6px;">AI 回答</div>
+        <div id="aiAnswerText" style="line-height:1.65;"></div>
+        <div id="aiSourcesText" style="margin-top:6px;font-size:12px;color:#475569;"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+        <button id="aiContinueBtn" style="background:#f59e0b;display:none;">完成，進入下一回合</button>
+      </div>
+    </div>
+  </div>
+
   <div id="winModal" class="modal">
     <div class="modal-box">
       <div class="trophy">🏆</div>
@@ -1020,7 +1043,19 @@
       occupied: {},
       goal: 7,
       gameOver: false,
-      introPlaying: false
+      introPlaying: false,
+      aiAsking: false
+    };
+
+    const AI_API_BASE = (() => {
+      if (location.protocol === "file:") return "http://127.0.0.1:8000/api/v1";
+      return `${location.protocol}//${location.hostname}:8000/api/v1`;
+    })();
+    const townToProductSlug = {
+      "埔里鎮": "puli-guava",
+      "鹿谷鄉": "lugu-oolong-tea",
+      "草屯鎮": "caotun-rice",
+      "魚池鄉": "yuchi-black-tea"
     };
 
     const $ = id => document.getElementById(id);
@@ -1264,7 +1299,7 @@
 
         $("introOverlay").classList.remove("show");
         $("introCardImage").classList.remove("show");
-        resetRoundAfterIntro(town, team);
+        openAiRoundOrReset(town, team);
       }
 
       $("skipIntroBtn").onclick = finishIntro;
@@ -1288,6 +1323,88 @@
       } catch(e) {
         $("introStatus").textContent = "語音播放失敗，將自動進入下一回合";
       }
+    }
+
+    function openAiRoundOrReset(town, team) {
+      const productSlug = townToProductSlug[town];
+
+      state.aiAsking = true;
+      updateUI();
+
+      $("aiModalTitle").textContent = `AI 食農問答｜${town}`;
+      $("aiModalSubtitle").textContent = `針對「${getFood(town).product}」提一題，完成後進入下一回合。`;
+      $("aiQuestionInput").value = `這項食材為什麼適合食農課？`;
+      $("aiStatusText").textContent = "準備就緒";
+      $("aiAnswerBox").style.display = "none";
+      $("aiAnswerText").textContent = "";
+      $("aiSourcesText").textContent = "";
+      $("aiContinueBtn").style.display = "none";
+      $("aiAskBtn").disabled = false;
+      $("aiAskBtn").textContent = "送出 AI 問題";
+      $("aiModal").classList.add("show");
+
+      const finishAiRound = () => {
+        $("aiModal").classList.remove("show");
+        state.aiAsking = false;
+        resetRoundAfterIntro(town, team);
+      };
+
+      $("aiSkipBtn").onclick = () => {
+        $("aiStatusText").textContent = "已略過 AI 問答，進入下一回合。";
+        finishAiRound();
+      };
+
+      $("aiContinueBtn").onclick = finishAiRound;
+
+      if (!productSlug) {
+        $("aiStatusText").textContent = "此鄉鎮尚未接到後端 AI 食材資料，先使用課堂引導模式。";
+        $("aiAnswerText").textContent = `目前 ${town} 還沒完成 API mapping。你可以請學生先回答：這項食材跟在地環境有什麼關係？`;
+        $("aiSourcesText").textContent = "來源：classroom-guide";
+        $("aiAnswerBox").style.display = "block";
+        $("aiContinueBtn").style.display = "inline-block";
+        $("aiAskBtn").disabled = true;
+        $("aiAskBtn").textContent = "此鄉鎮 AI 即將上線";
+        return;
+      }
+
+      $("aiAskBtn").onclick = async () => {
+        const question = $("aiQuestionInput").value.trim();
+        if (!question) {
+          $("aiStatusText").textContent = "請先輸入問題。";
+          return;
+        }
+
+        $("aiStatusText").textContent = "AI 回答中，請稍候...";
+        $("aiAskBtn").disabled = true;
+
+        try {
+          const response = await fetch(`${AI_API_BASE}/ai/ask`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ product_slug: productSlug, question })
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const payload = await response.json();
+          $("aiAnswerText").textContent = payload.answer || "AI 未回傳內容。";
+          const sources = Array.isArray(payload.sources) ? payload.sources.join("、") : "seed:nantou-food";
+          $("aiSourcesText").textContent = `來源：${sources}`;
+          $("aiAnswerBox").style.display = "block";
+          $("aiStatusText").textContent = "回答完成，可繼續下一回合。";
+          $("aiContinueBtn").style.display = "inline-block";
+        } catch (error) {
+          $("aiStatusText").textContent = "AI 服務暫時不可用，仍可繼續下一回合。";
+          $("aiAnswerText").textContent = "目前 AI 連線異常，請稍後再試。";
+          $("aiSourcesText").textContent = "來源：fallback";
+          $("aiAnswerBox").style.display = "block";
+          $("aiContinueBtn").style.display = "inline-block";
+        } finally {
+          $("aiAskBtn").disabled = false;
+        }
+      };
     }
 
     function resetRoundAfterIntro(town, team) {
@@ -1343,16 +1460,18 @@
       $("redAvatar").classList.toggle("running", state.redSteps > 0 && !state.readyTeam);
       $("greenAvatar").classList.toggle("running", state.greenSteps > 0 && !state.readyTeam);
 
-      $("redRunBtn").disabled = state.gameOver || state.introPlaying || (!!state.readyTeam && state.readyTeam !== "red");
-      $("greenRunBtn").disabled = state.gameOver || state.introPlaying || (!!state.readyTeam && state.readyTeam !== "green");
+      $("redRunBtn").disabled = state.gameOver || state.introPlaying || state.aiAsking || (!!state.readyTeam && state.readyTeam !== "red");
+      $("greenRunBtn").disabled = state.gameOver || state.introPlaying || state.aiAsking || (!!state.readyTeam && state.readyTeam !== "green");
 
       updateScore();
       updateHint();
     }
 
     function updateHint() {
-      if (state.introPlaying) {
-        $("hintText").textContent = "正在播放食材介紹，播放結束後兩隊步數會歸零並進入下一回合。";
+      if (state.aiAsking) {
+        $("hintText").textContent = "AI 問答進行中，完成後會自動進入下一回合。";
+      } else if (state.introPlaying) {
+        $("hintText").textContent = "正在播放食材介紹，播放結束後會進入 AI 問答或下一回合。";
       } else if (state.readyTeam) {
         $("hintText").textContent = `${state.readyTeam === "red" ? "紅隊" : "綠隊"}已取得攻佔資格，請點選尚未佔領的鄉鎮。`;
       } else {
@@ -1572,7 +1691,7 @@
       const score = updateScore();
       const topics = getRoomTopics();
       const payload = {
-        version: "v1.4.2",
+        version: "v1.5.0",
         roomId: activeRoomId,
         groupName: `小組 ${activeRoomId}`,
         redTerritory: score.red,
