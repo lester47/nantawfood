@@ -1,0 +1,16 @@
+# Local backups
+backup-current-v1.7-*/
+
+# Node / Next
+web-mvp/node_modules/
+web-mvp/.next/
+web-mvp/.turbo/
+
+# Python
+api-mvp/.venv/
+api-mvp/__pycache__/
+api-mvp/**/__pycache__/
+api-mvp/.pytest_cache/
+
+# OS / editor
+.DS_Store

@@ -1,0 +1,17 @@
+services:
+  web:
+    build:
+      context: ../web-mvp
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      API_BASE_URL: http://api:8000/api/v1
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ../api-mvp
+    ports:
+      - "8000:8000"
