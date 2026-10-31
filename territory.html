@@ -954,7 +954,7 @@
       .intro-box.theater .intro-actions a { width: min(360px, 100%); }
     }
 
-    @media (max-height: 800px) {
+    @media (max-height: 800px) and (max-width: 980px) {
       .intro-box.theater { width: min(94vw, calc(66.667vh + 80px)); }
       .intro-card-image { width: min(100%, 66.667vh); }
       .intro-card-frame { height: min(58vh, 620px); }
@@ -971,7 +971,17 @@
       .header-inner { align-items: flex-start; flex-direction: column; }
     }
   .map-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}#usbControls{position:relative;text-align:right}.usb-buttons{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}.usb-buttons button{font-size:12px;line-height:1.4;padding:7px 11px;border-radius:12px;border:1px solid #bed2ad;background:#edf4e4;color:#365b32;box-shadow:0 2px 0 #d1dfc2}.usb-buttons #uartConnect{background:#3b7046;color:#fff9df;border-color:#3b7046}.usb-buttons button:disabled{opacity:.45;cursor:default;box-shadow:none}.usb-buttons button:focus-visible{outline:3px solid #e3b447;outline-offset:2px}.usb-info{font-size:11px;color:#66755a;margin-top:4px}.usb-info summary{cursor:pointer;max-width:320px}.usb-popover{position:absolute;right:0;top:100%;z-index:15;width:min(330px,78vw);text-align:left;background:#fffced;border:1px solid #c7d5b5;border-radius:14px;padding:12px;box-shadow:0 8px 24px #243d292b;overflow-wrap:anywhere}.usb-popover p{font-size:12px;font-weight:500;margin:5px 0}.usb-popover pre{white-space:pre-wrap;font-size:12px}@media(max-width:760px){.map-head{flex-wrap:wrap}.map-actions{width:100%}.usb-buttons button{min-height:36px}}
-</style>
+/* Desktop dialogs always span the viewport, regardless of height or result state. */
+    @media (min-width: 981px) {
+      .intro-overlay, .modal { padding: 0; }
+      .intro-box.theater, #quizModal .modal-box, #quizModal .modal-box:has(#quizResult:not([hidden]) .ai-teaching), #winModal .modal-box {
+        width: 100%; max-width: none; border-radius: 0; box-sizing: border-box;
+      }
+      .intro-box.theater { grid-template-columns: minmax(0, 1fr); overflow-y: auto; }
+      .intro-box.theater p { width: 100%; min-width: 0; }
+      #quizModal .modal-box, #winModal .modal-box { max-height: 100dvh; overflow-y: auto; }
+    }
+  </style>
 </head>
 
 <body>
