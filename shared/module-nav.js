@@ -1,7 +1,7 @@
 (() => {
   if (location.pathname.endsWith('/index.html') || location.pathname.endsWith('/')) {
     const script = document.createElement('script');
-    script.src = new URL('../ai-settings.js?v=ai-r24', document.currentScript.src).href;
+    script.src = new URL('../ai-settings.js?v=ai-r25', document.currentScript.src).href;
     script.defer = true;
     document.head.append(script);
   }
