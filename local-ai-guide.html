@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>本機 AI 啟用教學｜南投食農互動平台</title><style>body{max-width:760px;margin:36px auto;padding:0 22px;background:#f3f6e9;color:#294b36;font:17px/1.85 system-ui}h1{font-size:28px}h2{font-size:21px;margin-top:30px}a{color:#245c4e}.download{display:inline-block;background:#245c4e;color:white;padding:12px 20px;border-radius:12px}li{margin:12px 0}code{overflow-wrap:anywhere}aside{padding:16px;background:#fff7dc;border-radius:12px}</style></head><body>
+<a href="index.html">← 回平台首頁</a><h1>一般使用者：啟用本機 AI 串接</h1><aside><strong>AI 串接是選用功能。</strong>網站不提供 API Key；要串接 AI，請使用你自己的 OpenAI API 金鑰。不串接也可以正常使用，系統會採用事先整理好的備用教材與解說。</aside>
+<p>適用 Windows 10／11 電腦。BAT 會下載本平台網站、建立獨立 Python 環境，啟動 AI 服務與本機網頁。第一次需連網下載約 110 MB 網站檔案及 Python 套件，請耐心等候；不需安裝 Git 或自行輸入指令。</p>
+<p><a class="download" href="downloads/start-local-ai.bat" download>下載 Windows 啟動 BAT</a></p>
+<h2>第一次使用</h2><ol>
+<li>先安裝 <a href="https://www.python.org/downloads/windows/" target="_blank" rel="noopener">Python 3.11 或更新版</a>。安裝時勾選 <strong>Add Python to PATH</strong>。已安裝者可直接下一步。</li>
+<li>下載上方 <strong>start-local-ai.bat</strong>，儲存到電腦後雙擊執行。若檔名變成 <code>.bat.txt</code>，請重新下載並保留 <code>.bat</code> 副檔名。若瀏覽器或 Windows 阻擋下載，請先確認來源是本平台；由學校管理的電腦請洽資訊人員處理。</li>
+<li>等候下載及安裝完成。檔案存放於 <code>%LOCALAPPDATA%\NantouFoodAI</code>，之後啟動會沿用已安裝的檔案。</li>
+<li>程式會自動開啟 <a href="http://127.0.0.1:8765/index.html">本機網站 http://127.0.0.1:8765/index.html</a>。請在這個頁面的「AI 金鑰設定」輸入自己的 API 金鑰，保留原有模型或填入自己有權限的模型名稱。</li>
+<li>依序按「儲存設定」與「測試 AI 連線」。顯示連線成功後，按「完成設定，開始遊戲」，即可使用回合後的 AI 教學。</li></ol>
+<h2>以後怎麼使用、如何關閉？</h2><p>每次雙擊同一個 BAT 即可。使用期間保留啟動視窗；結束時回到視窗按 Enter，會停止這次啟動的兩個服務。重新啟動後需再次輸入金鑰。若直接關閉視窗後出現連接埠已使用，可先重新啟動電腦，再執行 BAT。</p>
+<aside>金鑰只保留在本機 AI 服務記憶體，不寫入 BAT 或設定檔。呼叫 AI 會使用你的 API 額度；不設定金鑰仍可使用事先整理好的備用教材與解說。手機掃描首頁 QR code 開啟的是公開網站，不會啟動電腦上的 BAT 或本機 AI。</aside>
+<h2>常見問題</h2><ul>
+<li><strong>找不到 Python：</strong>重新安裝 Python 並勾選 PATH，完成後重新執行 BAT。</li>
+<li><strong>首次下載或套件安裝失敗：</strong>確認能連上 GitHub 及 Python 套件網站，再次執行 BAT；不要在下載進行中關閉視窗。</li>
+<li><strong>8000 或 8765 已被占用：</strong>回到先前的啟動視窗按 Enter 結束服務，或關閉使用該連接埠的程式。</li>
+<li><strong>AI 服務未啟動：</strong>確認啟動視窗顯示 Ready，並使用 BAT 自動開啟的本機頁面。公開網站仍可使用一般教材功能。</li>
+<li><strong>測試 AI 失敗：</strong>依畫面訊息確認金鑰、模型使用權限、API 額度與網路。不要把金鑰貼到錯誤截圖中。</li>
+<li><strong>需要重新下載最新版：</strong>停止本機服務後，刪除 <code>%LOCALAPPDATA%\NantouFoodAI\setup-r24.ready</code>，再執行 BAT，會重新下載與安裝。</li></ul>
+</body></html>

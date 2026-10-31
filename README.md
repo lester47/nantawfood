@@ -1,3 +1,7 @@
+## r24 本機 AI 啟動教學（2026-10-31）
+
+網站不提供 API Key，串接需使用自己的金鑰；不串接則使用事先整理的備用教材與解說。AI 設定視窗提供 Windows BAT 下載及教學；首次下載網站、建立 Python 環境並安裝套件，再啟動 127.0.0.1:8000 AI 服務及 8765 本機網站。詳細說明見 local-ai-guide.html。
+
 ## r23 首頁 QR code（2026-10-31）
 
 首頁右上方新增網站 QR code，可掃描開啟 https://lester47.github.io/nantawfood/index.html；手機版自動排列，避免遮擋標題與導覽。
