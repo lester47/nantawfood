@@ -69,7 +69,7 @@ h4{margin:14px 0 8px;font-size:14px}.go{display:block;text-align:center;backgrou
 .legend{zoom:.6}
 #panel{width:min(370px,32vw);bottom:auto;max-height:calc(100vh - 64px);padding:16px 16px 24px}
 }
-@media(min-width:981px){#viewer{left:auto;right:12px;width:50vw;max-width:none;box-sizing:border-box}#roleCard,#roleCard:has(.rgrid){left:0;right:0;width:100%;max-width:none;box-sizing:border-box;border-radius:0}.vtext,.vq{max-width:none;width:100%;box-sizing:border-box}}
+@media(min-width:981px){#viewer{left:auto;right:12px;width:50vw;max-width:none;box-sizing:border-box}#roleCard,#roleCard:has(.rgrid){left:16px;right:auto;width:min(560px,calc(50vw - 24px));max-width:calc(100vw - 32px);box-sizing:border-box;border-radius:24px}#roleCard .rgrid{grid-template-columns:minmax(0,1fr)}#roleCard .rc p{font-size:18px}#roleCard .rh b{font-size:28px}#roleCard .stage{font-size:14px}.vtext,.vq{max-width:none;width:100%;box-sizing:border-box}}
 </style></head><body>
 <div id="canvasHost"></div><div id="loading">載入南投食農島總覽⋯</div>
 <section class="top"><h1>南投食農探索群島<span class="lf">🌿</span></h1><div class="pill">🌱 走進十三鄉鎮　認識土地與食物 🌱</div><p>13 座浮空小島依南投縣的相對位置排列：西邊平原、中間盆地與湖泊、東邊高山。拖曳旋轉、滾輪縮放、點島進入。</p><button class="btn" id="overview">◎ 回到全景</button> <button class="btn ppl" id="peopleBtn">👥 認識島上的人</button></section>
