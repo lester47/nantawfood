@@ -147,8 +147,8 @@ async function boot(){
  window.__season=setSeason;
  const roleCard=$('roleCard');const esc2=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
  const roleHTML=(id,big)=>{const r=ROLES[id];return `<div class="rc ${r.cls}"><div class="rh"><span class="ri">${r.icon}</span><div><b>${esc2(r.name)}</b><small>${esc2(r.tag)}</small></div></div><p class="stage">${STAGES.map(s=>`<span class="${s===r.stage?'on':''}">${s}</span>`).join('<i>→</i>')}</p><p><em>我在做什麼</em>${esc2(r.does)}</p><p><em>你可以這樣做</em>${esc2(r.you)}</p><p class="law">📘 食農教育法推動方針：${esc2(r.principle)}</p></div>`};
- const showRole=id=>{roleCard.innerHTML=`<button class="x" aria-label="關閉">✕</button>${roleHTML(id)}<p class="note">角色為示意，非真實人物；說明內容待教師審閱。</p>`;roleCard.hidden=false;roleCard.querySelector('.x').onclick=()=>roleCard.hidden=true};
- $('peopleBtn').onclick=()=>{roleCard.innerHTML=`<button class="x" aria-label="關閉">✕</button><h3>認識島上的人：從土地到餐桌</h3><div class="rgrid">${Object.keys(ROLES).map(id=>roleHTML(id)).join('')}</div><p class="note">角色為示意，非真實人物；說明內容待教師審閱。推動方針依《食農教育法》第 4 條。</p>`;roleCard.hidden=false;roleCard.querySelector('.x').onclick=()=>roleCard.hidden=true};
+ const showRole=id=>{roleCard.innerHTML=`<button class="x" aria-label="關閉">✕</button>${roleHTML(id)}<p class="note">角色為示意，非真實人物。</p>`;roleCard.hidden=false;roleCard.querySelector('.x').onclick=()=>roleCard.hidden=true};
+ $('peopleBtn').onclick=()=>{roleCard.innerHTML=`<button class="x" aria-label="關閉">✕</button><h3>認識島上的人：從土地到餐桌</h3><div class="rgrid">${Object.keys(ROLES).map(id=>roleHTML(id)).join('')}</div><p class="note">角色為示意，非真實人物。推動方針依《食農教育法》第 4 條。</p>`;roleCard.hidden=false;roleCard.querySelector('.x').onclick=()=>roleCard.hidden=true};
  for(const w of villagers.walkers){const id=TYPES[w.t].id,r=ROLES[id];if(!r)continue;const el=document.createElement('button');el.className='vlab '+r.cls;el.innerHTML=`<b>${r.icon} ${esc2(r.name)}</b><i>${esc2(r.tag)}</i>`;el.style.display='none';el.onclick=e=>{e.stopPropagation();showRole(id)};host.append(el);w.lab=el}
 
  // ---- sky clouds: a ring above and around the archipelago + big puffs far on the horizon (islands stay unblocked) ----
