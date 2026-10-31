@@ -6,7 +6,7 @@
 
   function fallbackTeaching(card, attempts) {
     const explanations = attempts.map(item => item.question.explanation).filter(Boolean).join(' ');
-    const topic = attempts.map(item => item.question.knowledgePointId).filter(Boolean).join('、');
+    const topic = attempts.map(item => item.question.prompt).filter(Boolean).join('、');
     return `這張卡介紹的是${card.title}。本回合兩題都答錯，表示我們還需要再熟悉「${topic || '食材來源與特色'}」的觀念。${card.voice_intro || ''} ${explanations}閱讀圖卡時，可以先找出食材來自哪裡、怎麼生產，再想想它和日常飲食或環境的關係。下次遇到類似問題，先回到圖卡找關鍵詞，再做判斷。`;
   }
 
@@ -30,22 +30,23 @@
       language: '繁體中文'
     };
     try {
-      const request = url => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(context) });
+      const local = ['localhost', '127.0.0.1'].includes(location.hostname);
+      const endpoint = window.NANTOU_AI_BASE_URL || (local ? 'http://127.0.0.1:8000' : 'http://127.0.0.1:8000');
       let response;
-      // 本機 AI 後端在 8000；先呼叫它，避免 8766 靜態伺服器的 HTML
-      // 回應被誤當成教學 API，導致不必要地退回教材備援。
-      try { response = await request('http://127.0.0.1:8000/api/v1/ai/teach'); }
-      catch (error) {
-        try { response = await request('/api/v1/ai/teach'); }
-        catch (fallbackError) { response = null; }
-      }
-      if (!response.ok) throw new Error('AI 教學服務未回應');
+      try {
+        response = await fetch(endpoint.replace(/\/$/, '') + '/api/v1/ai/teach', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(context), signal: AbortSignal.timeout(45000)
+        });
+      } catch (e) { throw new Error('無法連線 AI 後端，請啟動本機 AI 服務並允許瀏覽器存取本機網路'); }
+      if (!(response.headers.get('content-type') || '').includes('application/json')) throw new Error('AI 網址未提供 JSON 教學服務');
       const data = await response.json();
-      if (!data.teaching || data.teaching.length < 30 || data.teaching.length > 260) throw new Error('AI 教學文字格式不符');
+      if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'AI 教學失敗（HTTP ' + response.status + '）');
+      if (typeof data.teaching !== 'string' || data.teaching.trim().length < 30) throw new Error('AI 回傳空白或不完整的教學');
       return { text: data.teaching, source: 'ai' };
     } catch (error) {
       console.warn('[AI teaching] fallback:', error.message);
-      return { text: fallbackTeaching(card, attempts), source: 'fallback' };
+      return { text: 'AI 未連線：' + error.message + '。以下為教材備援。' + fallbackTeaching(card, attempts), source: 'fallback' };
     }
   }
 

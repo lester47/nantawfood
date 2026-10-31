@@ -23,7 +23,10 @@ def test_ai_config() -> dict[str, object]:
     status = runtime_status()
     if not status["configured"]:
         raise HTTPException(status_code=400, detail="尚未設定 API 金鑰")
-    return {"message": "已設定 API 金鑰；可在領地戰雙方答錯時測試 AI 教學。"}
+    result = teach_wrong_answer({"food_name": "冬筍", "card_summary": "冬筍是孟宗竹幼芽，農民尋找位置後從土中挖掘。", "questions": []})
+    if not result:
+        raise HTTPException(status_code=503, detail="OpenAI 實際呼叫失敗，請確認金鑰、模型權限、額度與網路")
+    return {"message": "OpenAI 實際連線成功，已取得教學回應。"}
 
 
 @router.post("/ai/ask", response_model=AskResponse)

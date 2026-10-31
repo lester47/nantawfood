@@ -174,7 +174,7 @@ def teach_wrong_answer(context: dict[str, object]) -> Optional[str]:
                     {"role": "user", "content": prompt}], "temperature": 0.3, "max_tokens": 300})
         if response.status_code >= 400: return None
         content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        if isinstance(content, str) and 100 <= len(content.strip()) <= 220: return content.strip()
+        if isinstance(content, str) and 30 <= len(content.strip()) <= 2000: return content.strip()
     except Exception:
         return None
     return None
