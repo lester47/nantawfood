@@ -1,3 +1,7 @@
+## r23 首頁 QR code（2026-10-31）
+
+首頁右上方新增網站 QR code，可掃描開啟 https://lester47.github.io/nantawfood/index.html；手機版自動排列，避免遮擋標題與導覽。
+
 # 南投食農互動平台
 
 本目錄是 2026-10-30 從「網站」整理的 GitHub 發布版本。正式頁面、遊戲及圖卡內容保持原樣。
