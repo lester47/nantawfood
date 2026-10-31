@@ -1,5 +1,5 @@
 {
-  "release": "platform-2026.10.31-r25",
+  "release": "platform-2026.10.31-r26",
   "status": "homepage_design_pending_review",
   "confirmed_on": "2026-10-29",
   "territory_entry": "territory.html",
@@ -7,7 +7,7 @@
   "islands_entry": "islands/nantou-overview-v3.html",
   "islands_baseline": "nantou-islands-v3.16",
   "legacy_redirect": "territory-quiz.html",
-  "notes": "更新首頁導覽與 AI 說明快取版本；手機顯示備用教材說明，不嘗試連線本機 AI。",
+  "notes": "AI 設定視窗右上角新增固定顯示的關閉按鈕，連線期間亦可立即關閉。",
   "approved_game_baseline": "approved-20261029-r3",
   "accepted_on": "2026-10-29"
 }

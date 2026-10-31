@@ -10,10 +10,10 @@
   if ('caches' in window) {
    for (const key of await caches.keys()) if (key.startsWith('nantou-')) await caches.delete(key);
   }
-  location.replace('index.html?revision=ai-help-r25');
+  location.replace('index.html?revision=ai-help-r26');
  } catch (error) {
   document.getElementById('status').textContent='快取更新失敗：'+error.message;
-  const link=document.createElement('a');link.href='index.html?revision=ai-help-r25';link.textContent='開啟最新版平台首頁';document.body.append(link);
+  const link=document.createElement('a');link.href='index.html?revision=ai-help-r26';link.textContent='開啟最新版平台首頁';document.body.append(link);
  }
 })();
 </script></body></html>
