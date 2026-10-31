@@ -1110,6 +1110,7 @@
         <button id="replayIntroBtn" class="skip-intro" type="button">🔊 重播語音</button>
       </div>
       <div id="introLoading" class="intro-loading" role="status">圖卡載入中…</div>
+      <img id="introCardImage" class="intro-card-image" alt="食材圖卡備援圖片">
       <iframe id="introCardFrame" class="intro-card-frame" title="原始食材網頁"></iframe>
       <p id="introText">正在介紹食材...</p>
       <div class="sound-row">
@@ -1497,8 +1498,9 @@
       $("introProduct").textContent = card?.title || data.product;
       $("introText").textContent = introText;
       $("introStatus").textContent = "圖卡載入中，稍後播放語音";
-      $("introCardFrame").removeAttribute("src");
+      // Keep the previous document until the next navigation starts; avoid about:blank load races.
       $("introCardFrame").classList.remove("show");
+      $("introCardImage").classList.remove("show");
       $("introCardFrame").title = `${town}：${card?.title || data.product}原始食材網頁`;
       $("introLoading").textContent = "圖卡載入中…";
       $("introLoading").style.display = "grid";
@@ -1545,7 +1547,18 @@
       $("replayIntroBtn").onclick = speakIntro;
       if (card?.page) {
         const frame = $("introCardFrame");
-        frame.onload = () => {
+        const expectedUrl = new URL(card.page, location.href).href;
+        const requestId = String((Number(frame.dataset.requestId) || 0) + 1);
+        frame.dataset.requestId = requestId;
+        let ready = false;
+        let watch;
+        const showCard = () => {
+          if (finished || frame.dataset.requestId !== requestId || ready) return;
+          try {
+            if (frame.contentDocument?.URL !== expectedUrl || !frame.contentDocument.querySelector('.card')) return;
+          } catch (e) { return; }
+          ready = true;
+          clearInterval(watch);
           if (finished) return;
           try {
             const doc = frame.contentDocument;
@@ -1568,6 +1581,18 @@
           $("replayIntroBtn").disabled = false;
           speakIntro();
         };
+        frame.onload = showCard;
+        watch = setInterval(showCard, 100);
+        setTimeout(() => {
+          clearInterval(watch);
+          if (finished || ready || frame.dataset.requestId !== requestId) return;
+          frame.onload = null;
+          frame.classList.remove('show');
+          const image = $('introCardImage');
+          if (image && card.image) { image.src = card.image; image.classList.add('show'); }
+          $('introLoading').textContent = '網頁載入較慢，可繼續答題或開啟原始圖卡。';
+          $('replayIntroBtn').disabled = false;
+        }, 15000);
         frame.onerror = () => {
           if (finished) return;
           $("introLoading").textContent = "原始食材網頁暫時無法載入，仍可開新分頁閱讀。";
