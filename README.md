@@ -1,95 +1,27 @@
-# Nantou Food MVP
+# 南投食農互動平台
 
-南投食材網站 MVP，目前拆成兩個子專案：
+本目錄是 2026-10-30 從「網站」整理的 GitHub 發布版本。正式頁面、遊戲及圖卡內容保持原樣。
 
-- `web-mvp/`：Next.js App Router 前端
-- `api-mvp/`：FastAPI 後端 stub API
-- `infra/`：Docker Compose 啟動骨架
+## 入口
 
-## 目前功能
+- `index.html`：平台首頁
+- `territory.html`：領地戰
+- `islands/nantou-overview-v3.html`：食農島
+- `learning-cards/index.html`：104 張共用食材圖卡
+- `portal.html`、`territory-quiz.html`：舊網址相容轉址
 
-- 首頁與產品列表頁
-- 產品詳情頁與履歷區塊
-- QR 導流頁面流程
-- AI 問答頁（經由 Next Route Handler proxy 到 FastAPI）
-- FastAPI `products / traceability / ai/ask` stub API
-- Docker Compose 骨架
+## 本機預覽與發布
 
-## 專案結構
+在本目錄執行 `python -m http.server 8766 --bind 127.0.0.1`，開啟 http://127.0.0.1:8766/ 。
 
-```text
-nantawfood/
-├─ web-mvp/
-├─ api-mvp/
-├─ infra/
-└─ README.md
-```
+將**本目錄內的內容**作為 GitHub 儲存庫根目錄。GitHub Pages 選擇對應分支與 `/ (root)`；`.nojekyll` 已加入。尚未替你建立儲存庫、提交或推送。
 
-## 本機開發
+## AI 配套
 
-### 1) 啟動 API
+`api-mvp/` 是目前本機 AI 功能所需的 FastAPI 後端，已保留程式、測試及套件設定；啟動方式見其 README。GitHub Pages 僅提供靜態頁面，不能執行 Python；目前前端仍使用既有本機 AI 服務網址。線上 AI 部署需要另行配置後端。
 
-```bash
-cd api-mvp
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev]
-python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+## 整理範圍
 
-API 預設位置：
+保留 104 張圖卡 JPG、單卡頁使用的 101 張插畫 JPG、13 鄉鎮地圖及首頁插畫。移除發布副本中的高解析插畫 PNG 母檔、未使用的數字命名圖片、舊食農島原型、另一套 Next.js MVP、歷史規劃文件及 Python 產生檔。
 
-- `http://127.0.0.1:8000`
-- `http://127.0.0.1:8000/api/v1/products`
-
-### 2) 啟動 Web
-
-另開第二個終端：
-
-```bash
-cd web-mvp
-npm install
-API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run dev
-```
-
-Web 預設位置：
-
-- `http://127.0.0.1:3000`
-
-## 驗證指令
-
-### 前端
-
-```bash
-cd web-mvp
-npm run test:run
-npm run lint
-npm run build
-```
-
-### 後端
-
-```bash
-cd api-mvp
-./.venv/bin/python -m pytest -q
-```
-
-## Docker Compose
-
-目前已提供 compose 與 Dockerfile 骨架：
-
-```bash
-cd infra
-docker compose up --build
-```
-
-啟動後預期：
-
-- Web: `http://localhost:3000`
-- API: `http://localhost:8000`
-
-## 注意事項
-
-- Web 的 `/api/*` Route Handlers 現在會 proxy 到 FastAPI。
-- 若未設定 `API_BASE_URL`，web 預設會打 `http://127.0.0.1:8000/api/v1`。
-- 目前這些 API 都還是 stub/seed data，尚未接正式資料來源。
+原始資料完整保留於外層工作區；清理明細及驗證報告位於外層 `版本確認/github-clean-2026-10-30/`，不需上傳。既有 VERSION、CHANGELOG 代表功能版本，這次只整理發布內容。

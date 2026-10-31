@@ -10,6 +10,7 @@
 - `GET /api/v1/products/code/{product_code}`
 - `GET /api/v1/traceability/{product_code}`
 - `POST /api/v1/ai/ask`
+- `POST /api/v1/ai/teach`：雙方答錯後的 100–220 字錯題教學
 
 ## 安裝
 
@@ -38,6 +39,8 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 1. 若有設定 `OPENAI_API_KEY`，會嘗試呼叫 OpenAI 相容 Chat Completions
 2. 若未設定金鑰或呼叫失敗，回退為 deterministic seed 回答
 3. `sources` 會套用來源限制，只回傳允許網域（`AI_ALLOWED_SOURCE_DOMAINS`）與 `seed:nantou-food`
+
+`POST /api/v1/ai/teach` 需要 `OPENAI_API_KEY`，接收鄉鎮、食材、兩題錯題、知識點與官方教材連結；沒有金鑰或呼叫失敗時回傳 503，由前端顯示教材備援。
 
 可選環境變數：
 

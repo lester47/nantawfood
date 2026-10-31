@@ -5,6 +5,20 @@ from urllib.parse import urlparse
 
 import httpx
 
+_runtime_config: dict[str, str] = {}
+
+def configure_runtime(key: str | None = None, model: str | None = None, clear: bool = False) -> None:
+    if clear:
+        _runtime_config.clear()
+        return
+    if key:
+        _runtime_config["OPENAI_API_KEY"] = key.strip()
+    if model:
+        _runtime_config["AI_MODEL"] = model.strip()
+
+def runtime_status() -> dict[str, object]:
+    return {"configured": bool(_runtime_config.get("OPENAI_API_KEY") or getenv("OPENAI_API_KEY")), "model": _runtime_config.get("AI_MODEL") or getenv("AI_MODEL", "gpt-4o-mini")}
+
 from app.services.products_service import get_product_by_slug, get_traceability_by_product_code
 
 
@@ -68,12 +82,12 @@ def _is_allowed_source_url(source_url: str) -> bool:
 
 
 def _try_openai_answer(product: dict[str, object], question: str) -> Optional[str]:
-    api_key = getenv("OPENAI_API_KEY")
+    api_key = _runtime_config.get("OPENAI_API_KEY") or getenv("OPENAI_API_KEY")
     if not api_key:
         return None
 
     base_url = getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-    model = getenv("AI_MODEL", "gpt-4o-mini")
+    model = _runtime_config.get("AI_MODEL") or getenv("AI_MODEL", "gpt-4o-mini")
 
     prompt = _build_prompt(product=product, question=question)
 
@@ -136,3 +150,31 @@ def _build_fallback_answer(product: dict[str, object], question: str) -> str:
         f"目前可用資料顯示其季節特性為：{season_note}；"
         f"營養與學習切角可從：{nutrition_note} 開始。"
     )
+
+
+def teach_wrong_answer(context: dict[str, object]) -> Optional[str]:
+    """Generate a short, source-bounded lesson for a two-question miss."""
+    api_key = _runtime_config.get("OPENAI_API_KEY") or getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    base_url = getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    model = _runtime_config.get("AI_MODEL") or getenv("AI_MODEL", "gpt-4o-mini")
+    prompt = (f"鄉鎮：{context.get('town', '')}\n食材：{context.get('food_name', '')}\n"
+        f"圖卡摘要：{context.get('card_summary', '')}\n知識點：{context.get('knowledge_points', [])}\n"
+        f"錯題資料：{context.get('questions', [])}\n請寫一段約30秒可朗讀完的繁體中文教學（約130至180字）。"
+        "對象是國小學生；只針對本回合這一種食材與兩題錯題，先說明食材，再指出兩個錯誤觀念，"
+        "最後給一個可以做到的食農行動。只能使用提供的資料，不要新增考題、編造來源或延伸未提供的健康功效。"
+        "請直接輸出教學稿，不要加標題或前言；請將3至5個最重要的錯誤觀念、正確知識點或行動詞用 **兩個星號** 包住，方便網頁加粗顯示。")
+    try:
+        with httpx.Client(timeout=20.0) as client:
+            response = client.post(f"{base_url.rstrip('/')}/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={"model": model, "messages": [
+                    {"role": "system", "content": "你是南投縣國小食農教育老師。雙方玩家都答錯後，請用溫和、清楚、可朗讀的方式進行約30秒補救教學，只根據輸入資料。"},
+                    {"role": "user", "content": prompt}], "temperature": 0.3, "max_tokens": 300})
+        if response.status_code >= 400: return None
+        content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        if isinstance(content, str) and 100 <= len(content.strip()) <= 220: return content.strip()
+    except Exception:
+        return None
+    return None

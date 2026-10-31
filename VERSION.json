@@ -1,0 +1,13 @@
+{
+  "release": "platform-2026.10.30-r20",
+  "status": "homepage_design_pending_review",
+  "confirmed_on": "2026-10-29",
+  "territory_entry": "territory.html",
+  "portal_entry": "index.html",
+  "islands_entry": "islands/nantou-overview-v3.html",
+  "islands_baseline": "nantou-islands-v3.16",
+  "legacy_redirect": "territory-quiz.html",
+  "notes": "電腦版答題回饋採左右兩欄：答題解析與 AI 教學並列，手機維持單欄。",
+  "approved_game_baseline": "approved-20261029-r3",
+  "accepted_on": "2026-10-29"
+}
