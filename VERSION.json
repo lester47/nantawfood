@@ -1,5 +1,5 @@
 {
-  "release": "platform-2026.11.04-r29",
+  "release": "platform-2026.11.04-r30",
   "status": "homepage_design_pending_review",
   "confirmed_on": "2026-10-29",
   "territory_entry": "territory.html",
@@ -7,7 +7,7 @@
   "islands_entry": "islands/nantou-overview-v3.html",
   "islands_baseline": "nantou-islands-v3.16",
   "legacy_redirect": "territory-quiz.html",
-  "notes": "首頁新增食農遊樂園第四模組，連至八款遊戲 Padlet 彙整頁；桌面雙欄、手機單欄。",
+  "notes": "全站右上角快速連結新增食農遊樂園，另開 Padlet 分頁；更新所有頁面的導覽快取版本。",
   "approved_game_baseline": "approved-20261029-r3",
   "accepted_on": "2026-10-29"
 }

@@ -17,13 +17,13 @@
   nav.id = 'platform-module-nav';
   nav.setAttribute('aria-label','食農平台模組切換');
   nav.style.cssText='position:fixed;right:10px;top:8px;z-index:10000;display:flex;flex-wrap:wrap;gap:6px;max-width:90vw;padding:7px;border-radius:14px;background:#fffef2ee;box-shadow:0 2px 10px #0003;font:14px sans-serif';
-  const links = [['平台首頁','index.html'],['領地戰','territory.html'],['食農島','islands/nantou-overview-v3.html'],['共用圖卡','learning-cards/index.html']].map(([label,path])=>{
-    const a=document.createElement('a'); a.textContent=label;a.dataset.path=path;
+  const links = [['平台首頁','index.html'],['領地戰','territory.html'],['食農島','islands/nantou-overview-v3.html'],['共用圖卡','learning-cards/index.html'],['食農遊樂園','https://padlet.com/lester471/padlet-s0254rx5u8gyx7usj57e']].map(([label,path])=>{
+    const a=document.createElement('a'); a.textContent=label;a.dataset.path=path;if(path.startsWith('https://')){a.target='_blank';a.rel='noopener noreferrer';a.setAttribute('aria-label',label+'（另開分頁）');}
     a.style.cssText='display:inline-flex;align-items:center;color:#244f36;padding:5px;text-decoration:underline;font:14px/1.5 sans-serif;border:0;border-radius:6px;background:transparent;box-shadow:none;margin:0;white-space:nowrap'; nav.append(a); return a;
   });
   function update() {
-    for(const a of links){const url=new URL(a.dataset.path,root);if(a.dataset.path==='territory.html')url.searchParams.set('revision',approvedRevision);if(a.dataset.path==='islands/nantou-overview-v3.html')url.searchParams.set('revision','links-r4');if(town && a.dataset.path!=='index.html' && location.pathname!==root.pathname && location.pathname!==new URL('index.html',root).pathname)url.searchParams.set('town',town);a.href=url.href;
-      const current=location.pathname===url.pathname;
+    for(const a of links){const url=new URL(a.dataset.path,root);if(a.dataset.path==='territory.html')url.searchParams.set('revision',approvedRevision);if(a.dataset.path==='islands/nantou-overview-v3.html')url.searchParams.set('revision','links-r4');if(url.origin===root.origin && town && a.dataset.path!=='index.html' && location.pathname!==root.pathname && location.pathname!==new URL('index.html',root).pathname)url.searchParams.set('town',town);a.href=url.href;
+      const current=location.origin===url.origin && location.pathname===url.pathname;
       if(current){a.setAttribute('aria-current','page');a.style.fontWeight='bold';a.style.background='#e1ecd9';}else{a.removeAttribute('aria-current');a.style.fontWeight='normal';a.style.background='transparent';}
     }
   }
