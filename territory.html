@@ -305,6 +305,8 @@
       filter: drop-shadow(4px 8px 7px rgba(70,55,30,.28));
     }
 
+    .town.locked { cursor: not-allowed; }
+
     .town.ready {
       stroke: #f59e0b;
       stroke-width: 3;
@@ -1020,7 +1022,7 @@
             正在載入南投真實地圖資料...
           </div>
         </div>
-        <div id="selectBanner" class="select-banner">已跑滿 10 步，請點選鄉鎮！</div>
+        <div id="selectBanner" class="select-banner">已跑滿 10 步，請點選尚未鎖定的鄉鎮！</div>
         <svg id="map"></svg>
         <div class="map-caption">
           <div style="font-size:30px">🌾</div>
@@ -1421,8 +1423,8 @@
       state.readyTeam = team;
       setTeam(team);
       $("selectBanner").classList.add("show");
-      d3.selectAll(".town").classed("ready", true);
-      $("storyText").textContent = `${team === "red" ? "紅隊" : "綠隊"}已經跑滿 10 步，請直接點選地圖上的一個鄉鎮。`;
+      d3.selectAll(".town").classed("ready", d => !state.occupied[getTownName(d)]);
+      $("storyText").textContent = `${team === "red" ? "紅隊" : "綠隊"}已經跑滿 10 步，請點選尚未鎖定的鄉鎮；成功攻佔後，本場比賽不可再翻盤。`;
       debug(`${team === "red" ? "紅隊" : "綠隊"}等待選擇鄉鎮`);
     }
 
@@ -1434,6 +1436,13 @@
       d3.select(this).classed("selected", true);
 
       showInfo(town);
+
+      if (state.occupied[town]) {
+        $("storyText").textContent = `${town}已由${state.occupied[town] === "red" ? "紅隊" : "綠隊"}攻佔並鎖定，本場比賽不可再挑戰，請選擇尚未鎖定的領地。`;
+        debug("領地已鎖定：" + town);
+        return;
+      }
+      if (state.gameOver || state.introPlaying || state.quizActive) return;
 
       if (!state.readyTeam) {
         $("storyText").textContent = `${town}有 8 張食農圖卡。請先跑滿 10 步，再選擇鄉鎮開始挑戰。`;
@@ -1634,7 +1643,7 @@
 
     function applyGameQuizResult(result) {
       const challenge = state.pendingChallenge;
-      if (!challenge || challenge.resolved || result.cardId !== challenge.cardId || result.town !== challenge.town ||
+      if (!challenge || challenge.resolved || state.gameOver || state.occupied[challenge.town] || result.cardId !== challenge.cardId || result.town !== challenge.town ||
           result.attackTeam !== challenge.attackTeam || result.ownerBefore !== challenge.ownerBefore ||
           ![null, "red", "green"].includes(result.winnerTeam)) return;
       challenge.resolved = true;
@@ -1646,7 +1655,9 @@
       else delete state.occupied[challenge.town];
       d3.select(challenge.territory)
         .classed("red", ownerAfter === "red")
-        .classed("green", ownerAfter === "green");
+        .classed("green", ownerAfter === "green")
+        .classed("locked", !!ownerAfter)
+        .attr("aria-label", `${challenge.town}${ownerAfter ? "，已攻佔並鎖定" : "，尚未鎖定"}`);
       updateScore();
       publishRoomSummary("playing");
       updateUI();
@@ -1677,7 +1688,7 @@
       d3.selectAll(".town").classed("ready", false);
 
       const outcomeText = result?.winnerTeam
-        ? `${result.winnerTeam === "red" ? "紅隊" : "綠隊"}${result.ownerBefore === result.winnerTeam ? "守住" : "取得"} ${town}`
+        ? `${result.winnerTeam === "red" ? "紅隊" : "綠隊"}${result.ownerBefore === result.winnerTeam ? "守住" : "取得"} ${town}，領地已鎖定`
         : result?.outcome === "both_incorrect" ? `${town} 雙方都答錯，領地維持原狀`
           : `${town} 回合中止，領地維持原狀`;
       $("storyText").textContent = `${outcomeText}。${usbActive ? "請裁判歸零後開始下一回合。" : "兩隊步數歸零，下一回合開始！"}`;
@@ -1739,7 +1750,7 @@
       } else if (state.introPlaying) {
         $("hintText").textContent = "請閱讀本回合抽到的食材圖卡，可重播語音，完成後再繼續。";
       } else if (state.readyTeam) {
-        $("hintText").textContent = `${state.readyTeam === "red" ? "紅隊" : "綠隊"}已取得選地資格。${state.nextAttackTeam ? `本回合由${state.nextAttackTeam === "red" ? "紅隊" : "綠隊"}先攻。` : "首回合由選地隊伍先攻。"}請點選鄉鎮。`;
+        $("hintText").textContent = `${state.readyTeam === "red" ? "紅隊" : "綠隊"}已取得選地資格。${state.nextAttackTeam ? `本回合由${state.nextAttackTeam === "red" ? "紅隊" : "綠隊"}先攻。` : "首回合由選地隊伍先攻。"}請點選尚未鎖定的鄉鎮，已攻佔領地不可再翻盤。`;
       } else {
         $("hintText").textContent = `目前選擇隊伍為${state.currentTeam === "red" ? "紅隊" : "綠隊"}。跑滿 10 步後，地圖會進入可攻佔狀態。`;
       }

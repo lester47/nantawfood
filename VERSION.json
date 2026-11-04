@@ -1,5 +1,5 @@
 {
-  "release": "platform-2026.10.31-r27",
+  "release": "platform-2026.11.04-r28",
   "status": "homepage_design_pending_review",
   "confirmed_on": "2026-10-29",
   "territory_entry": "territory.html",
@@ -7,7 +7,7 @@
   "islands_entry": "islands/nantou-overview-v3.html",
   "islands_baseline": "nantou-islands-v3.16",
   "legacy_redirect": "territory-quiz.html",
-  "notes": "桌面首頁 QR code 從 205px 縮為 123px，保留掃描留白與手機尺寸。",
+  "notes": "成功攻佔的領地於本場比賽鎖定，後續選地不可翻盤；重新開始才解除。",
   "approved_game_baseline": "approved-20261029-r3",
   "accepted_on": "2026-10-29"
 }
