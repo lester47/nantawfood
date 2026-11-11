@@ -1012,7 +1012,7 @@
           <button id="fullMode" class="mode-btn">全馬 13 點</button>
           <button id="resetBtn" class="mode-btn">重新開始</button>
           <button id="demoFinishBtn" class="mode-btn demo-finish-btn" type="button">🎉 模擬比賽結束</button>
-        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r31</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
+        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r32</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
       </div>
 
       <div class="map-wrap">
@@ -1249,10 +1249,19 @@
 
 
     let usbActive=false, invalidUsb=0;
+    // r32 雙軌：顯示步數＝裁判累計（扣掉 usbBase）＋網頁按鍵補的步數；裁判到 10 時以裁判為準。
+    let usbBase={a:0,b:0}, manualAdd={red:0,green:0}, roundTrigger=null;
     const usbGate=new RaceInput.ProgressGate({
       isBusy:()=>state.gameOver||state.introPlaying||state.quizActive||!!state.readyTeam,
-      onProgress:p=>{state.redSteps=p.a;state.greenSteps=p.b;updateUI();},
-      onTarget:team=>activateSelect(team),
+      onProgress:p=>{
+        if(p.a<usbBase.a||p.b<usbBase.b)usbBase={a:0,b:0};
+        const hit=p.a===10||p.b===10;
+        state.redSteps=p.a===10?10:Math.min(10,Math.max(0,p.a-usbBase.a)+manualAdd.red);
+        state.greenSteps=p.b===10?10:Math.min(10,Math.max(0,p.b-usbBase.b)+manualAdd.green);
+        updateUI();
+        if(!hit&&!state.readyTeam&&(state.redSteps>=10||state.greenSteps>=10))activateSelect(state.redSteps>=10?"red":"green","web");
+      },
+      onTarget:team=>{if(!state.readyTeam)activateSelect(team,"referee");},
       onZero:()=>{if(!state.introPlaying&&!state.quizActive&&!state.readyTeam)$("refereeHint").textContent="裁判已歸零，可以開始下一回合。";}
     });
     const usbLink=new RefereeLink({
@@ -1264,7 +1273,7 @@
       },
       onInvalid:raw=>{$("uartInvalid").textContent=`異常封包：${++invalidUsb}；${raw}`;},
       onState:(kind,message)=>{
-        usbActive=!!usbLink.port;$("uartStatus").textContent=message;
+        usbActive=!!usbLink.port;if(kind==='connected')usbBase={a:0,b:0};$("uartStatus").textContent=message;
         $("uartConnect").disabled=usbActive;$("uartDisconnect").disabled=!usbActive;$("uartQuery").disabled=!usbActive;
       }
     });
@@ -1400,7 +1409,6 @@
     }
 
     function addStep(team) {
-      if(usbActive)return;
       if (state.gameOver || state.introPlaying || state.quizActive) return;
 
       if (state.readyTeam && state.readyTeam !== team) {
@@ -1409,9 +1417,11 @@
       }
 
       if (team === "red") {
+        manualAdd.red += 1;
         state.redSteps = Math.min(10, state.redSteps + 1);
         if (state.redSteps >= 10) activateSelect("red");
       } else {
+        manualAdd.green += 1;
         state.greenSteps = Math.min(10, state.greenSteps + 1);
         if (state.greenSteps >= 10) activateSelect("green");
       }
@@ -1419,7 +1429,8 @@
       updateUI();
     }
 
-    function activateSelect(team) {
+    function activateSelect(team, source = "web") {
+      roundTrigger = source;
       state.readyTeam = team;
       setTeam(team);
       $("selectBanner").classList.add("show");
@@ -1676,11 +1687,17 @@
 
     function resetRoundAfterIntro(town, team) {
       // r31：裁判若已在答題期間按 A 歸零，直接接上新一輪；否則照舊等待裁判歸零。
-      const usbResume = usbActive ? usbGate.finishRound() : null;
-      if(usbActive){$("refereeHint").textContent=usbResume?"裁判已歸零，可以開始下一回合。":"回合完成，請裁判歸零後開始下一回合。";}
+      // r32：本回合由網頁按鍵達標時，裁判未必歸零，改以裁判目前累計為新基準；裁判一直沒傳資料時視同網頁模式。
+      const usbLive = usbActive && !!usbGate.latest;
+      const usbResume = usbLive ? usbGate.finishRound() : null;
+      const webRound = roundTrigger === "web";
+      let carry = usbResume;
+      manualAdd = {red:0, green:0}; roundTrigger = null; usbBase = {a:0, b:0};
+      if (usbResume && webRound) { usbBase = {a:usbResume.a, b:usbResume.b}; carry = null; }
+      if(usbLive){$("refereeHint").textContent=!usbResume?"回合完成，請裁判歸零後開始下一回合。":webRound&&(usbResume.a||usbResume.b)?"本回合由網頁按鍵完成；若 D 仍亮燈，請裁判按 A+B 再按 A，讓兩邊一致。":"裁判已歸零，可以開始下一回合。";}
       const result = state.lastChallengeResult;
-      state.redSteps = usbResume ? usbResume.a : 0;
-      state.greenSteps = usbResume ? usbResume.b : 0;
+      state.redSteps = carry ? carry.a : 0;
+      state.greenSteps = carry ? carry.b : 0;
       state.readyTeam = null;
       state.introPlaying = false;
       state.quizActive = false;
@@ -1693,7 +1710,7 @@
         ? `${result.winnerTeam === "red" ? "紅隊" : "綠隊"}${result.ownerBefore === result.winnerTeam ? "守住" : "取得"} ${town}，領地已鎖定`
         : result?.outcome === "both_incorrect" ? `${town} 雙方都答錯，領地維持原狀`
           : `${town} 回合中止，領地維持原狀`;
-      $("storyText").textContent = `${outcomeText}。${usbActive && !usbResume ? "請裁判歸零後開始下一回合。" : usbResume ? "裁判已歸零，下一回合開始！" : "兩隊步數歸零，下一回合開始！"}`;
+      $("storyText").textContent = `${outcomeText}。${usbLive && !usbResume ? "請裁判歸零後開始下一回合。" : carry ? "裁判已歸零，下一回合開始！" : "兩隊步數歸零，下一回合開始！"}`;
       debug(`${outcomeText}，進入下一回合`);
 
       updateUI();
