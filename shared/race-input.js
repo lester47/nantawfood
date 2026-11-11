@@ -31,7 +31,9 @@
         this.awaitingZero=false;this.winner=null;
         this.onProgress(p);this.onZero();return true;
       }
-      if(this.awaitingZero||this.isBusy())return false;
+      if(this.isBusy())return false;
+      // r31：裁判只能靠歸零讓步數變小；等待期間收到不含 10 的進度，代表裁判已開新一輪。
+      if(this.awaitingZero){if(p.a===10||p.b===10)return false;this.awaitingZero=false;this.winner=null;}
       this.onProgress(p);
       if(!this.winner&&(p.a===10||p.b===10)) {
         this.winner=p.a===10?'red':'green';this.onTarget(this.winner);
@@ -42,6 +44,12 @@
     finishPresentation() {
       this.awaitingZero=!this.latest || this.latest.a!==0 || this.latest.b!==0;
       this.winner=null;
+    }
+    // r31：回合結束時檢查最後一筆進度；裁判在答題中就按 A 歸零時，直接接上新一輪，回傳該進度。
+    finishRound() {
+      const p=this.latest;this.winner=null;
+      this.awaitingZero=!p || p.a===10 || p.b===10;
+      return this.awaitingZero?null:p;
     }
   }
   const api={CONFIG,ShortFrameReceiver,ProgressGate};

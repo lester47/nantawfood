@@ -1158,7 +1158,7 @@
   <script src="./learning-cards/game-cards.js"></script>
   <script src="./learning-cards/quiz-demo-data.js"></script>
   <script src="./learning-cards/quiz-demo.js?v=ai-r21"></script>
-<script src="shared/race-input.js?v=uart-r11"></script><script src="shared/referee-link.js?v=uart-r11"></script>
+<script src="shared/race-input.js?v=uart-r31"></script><script src="shared/referee-link.js?v=uart-r11"></script>
 <script>
     const geoJsonUrl = "https://raw.githubusercontent.com/titaneric/Taiwan-GeoJSON/master/%E5%8D%97%E6%8A%95%E7%B8%A3%E9%84%89%E9%8E%AE.json";
 
@@ -1675,10 +1675,12 @@
     }
 
     function resetRoundAfterIntro(town, team) {
-      if(usbActive){usbGate.consume();$("refereeHint").textContent="回合完成，請裁判歸零後開始下一回合。";}
+      // r31：裁判若已在答題期間按 A 歸零，直接接上新一輪；否則照舊等待裁判歸零。
+      const usbResume = usbActive ? usbGate.finishRound() : null;
+      if(usbActive){$("refereeHint").textContent=usbResume?"裁判已歸零，可以開始下一回合。":"回合完成，請裁判歸零後開始下一回合。";}
       const result = state.lastChallengeResult;
-      state.redSteps = 0;
-      state.greenSteps = 0;
+      state.redSteps = usbResume ? usbResume.a : 0;
+      state.greenSteps = usbResume ? usbResume.b : 0;
       state.readyTeam = null;
       state.introPlaying = false;
       state.quizActive = false;
@@ -1691,7 +1693,7 @@
         ? `${result.winnerTeam === "red" ? "紅隊" : "綠隊"}${result.ownerBefore === result.winnerTeam ? "守住" : "取得"} ${town}，領地已鎖定`
         : result?.outcome === "both_incorrect" ? `${town} 雙方都答錯，領地維持原狀`
           : `${town} 回合中止，領地維持原狀`;
-      $("storyText").textContent = `${outcomeText}。${usbActive ? "請裁判歸零後開始下一回合。" : "兩隊步數歸零，下一回合開始！"}`;
+      $("storyText").textContent = `${outcomeText}。${usbActive && !usbResume ? "請裁判歸零後開始下一回合。" : usbResume ? "裁判已歸零，下一回合開始！" : "兩隊步數歸零，下一回合開始！"}`;
       debug(`${outcomeText}，進入下一回合`);
 
       updateUI();
