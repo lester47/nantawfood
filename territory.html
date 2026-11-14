@@ -1017,6 +1017,16 @@
       /* r38：AI 錯題教學也置中留白，不貼齊或超出螢幕；保留左右兩欄。 */
       #quizModal .modal-box:has(#quizResult:not([hidden]) .ai-teaching) { width: min(1240px, calc(100vw - 64px)); max-width: calc(100vw - 64px); max-height: 92dvh; border-radius: 28px; padding: 22px 28px; }
       #quizModal .modal-box { box-sizing: border-box; max-width: calc(100vw - 48px); overflow-x: hidden; }
+      /* r42：食材介紹改為上下排列，圖卡自動讓出高度，底部介紹文字一定看得到且字體加大。 */
+      .intro-box.theater { display: flex; flex-direction: column; align-items: stretch; gap: 8px; height: 100dvh; overflow: hidden; padding: 14px 24px 16px; }
+      .intro-box.theater h2 { margin: 0; font-size: 30px; }
+      .intro-box.theater h3 { margin: 0; }
+      .intro-box.theater .intro-actions { order: 5; flex: none; }
+      .intro-box.theater .intro-actions button { font-size: 22px; padding: 14px 10px; }
+      .intro-box.theater .intro-card-frame, .intro-box.theater .intro-loading, .intro-box.theater .intro-card-image.show { flex: 1 1 auto; min-height: 0; height: auto; max-height: none; }
+      .intro-box.theater .intro-card-image.show { width: auto; max-width: 100%; object-fit: contain; }
+      .intro-box.theater p#introText { order: 4; flex: none; margin: 4px 0 0; padding: 14px 22px; font-size: clamp(22px, 1.6vw, 28px); line-height: 1.6; font-weight: 800; text-align: left; color: #1f3324; background: #fff8dc; border: 3px solid #e0b84e; border-radius: 18px; max-height: 32vh; overflow-y: auto; }
+      .intro-box.theater .sound-row { order: 6; flex: none; margin: 0; font-size: 18px; }
       /* r41：結束視窗置中窄版，外框為勝隊顏色 */
       #winModal .modal-box { width: min(760px, calc(100% - 48px)); max-height: 94dvh; border-radius: 32px; }
     }
@@ -1049,7 +1059,7 @@
           <button id="fullMode" class="mode-btn">全馬 13 點</button>
           <button id="resetBtn" class="mode-btn">重新開始</button>
           <button id="demoFinishBtn" class="mode-btn demo-finish-btn" type="button">🎉 模擬比賽結束</button>
-        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartReset" type="button" disabled>裁判歸零</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r41</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
+        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartReset" type="button" disabled>裁判歸零</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r42</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
       </div>
 
       <div class="map-wrap">
