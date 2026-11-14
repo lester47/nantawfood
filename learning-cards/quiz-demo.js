@@ -125,19 +125,35 @@
       $('quizAbortBtn').hidden = true;
       $('quizResult').hidden = false;
       resultBody.replaceChildren();
+      // r36：結果頁以答對隊伍的顏色顯示大橫幅，一眼看出哪隊拿到領地。
+      const modalBox = modal.querySelector('.modal-box');
+      modalBox.classList.remove('win-red', 'win-green', 'win-none');
+      modalBox.classList.add(winnerTeam ? `win-${winnerTeam}` : 'win-none');
       const reviews = append(resultBody, 'div', null, 'quiz-reviews');
       const summary = outcome === 'aborted'
         ? '本回合已中止，領地維持原狀。'
         : winnerTeam
           ? `${teamName(winnerTeam)}${ownerBefore === winnerTeam ? '守城成功' : '取得領地'}！`
           : '雙方都答錯，領地維持原狀。';
-      append(reviews, 'h3', summary);
+      if (winnerTeam) {
+        const banner = append(reviews, 'div', null, `quiz-win-banner ${winnerTeam}`);
+        append(banner, 'span', '✔', 'quiz-win-flag');
+        const words = append(banner, 'div');
+        append(words, 'strong', `${teamName(winnerTeam)}答對！`);
+        append(words, 'span', `${ownerBefore === winnerTeam ? '守住' : '搶下'} ${town}`);
+      } else {
+        append(reviews, 'h3', summary, 'quiz-no-win');
+      }
       if (outcome !== 'aborted') {
         for (const attempt of attempts) {
-          const block = append(reviews, 'section', null, 'quiz-review');
-          append(block, 'h4', `${teamName(attempt.team)}｜${attempt.question.prompt}`);
+          const block = append(reviews, 'section', null, `quiz-review team-${attempt.team}`);
+          const head = append(block, 'h4');
+          append(head, 'span', teamName(attempt.team), `quiz-team-tag ${attempt.team}`);
+          append(head, 'span', attempt.question.prompt);
           const answer = attempt.question.choices.find(choice => choice.id === attempt.question.answer);
-          append(block, 'p', `${attempt.correct ? '答對' : '答錯'}。正確答案：${answer?.text || attempt.question.answer}`);
+          const verdict = append(block, 'p', null, attempt.correct ? 'quiz-verdict correct' : 'quiz-verdict wrong');
+          append(verdict, 'b', attempt.correct ? '✔ 答對' : '✘ 答錯');
+          append(verdict, 'span', `　正確答案：${answer?.text || attempt.question.answer}`);
           append(block, 'p', attempt.question.explanation);
           if (!attempt.correct) {
             append(block, 'p', `延伸閱讀：${attempt.question.remediation.summary}`);

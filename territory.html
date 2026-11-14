@@ -767,6 +767,28 @@
     #quizModal .quiz-choice:has(input:checked) { border-color: #376b48; background: #edf5e8; }
     #quizModal .quiz-choice input { width: 22px; height: 22px; flex: none; margin-top: 4px; }
     #quizModal .quiz-review { border-top: 1px solid #cbd6bf; padding: 12px 0; }
+    /* r36：結果頁依答對隊伍上色 */
+    #quizModal .modal-box.win-red:has(#quizResult:not([hidden])) { border: 6px solid #dc2626; box-shadow: 0 0 0 6px #fecaca, 0 18px 50px #7f1d1d55; }
+    #quizModal .modal-box.win-green:has(#quizResult:not([hidden])) { border: 6px solid #16a34a; box-shadow: 0 0 0 6px #bbf7d0, 0 18px 50px #14532d55; }
+    #quizModal .quiz-win-banner { display: flex; align-items: center; gap: 16px; padding: 16px 22px; margin: 4px 0 14px; border-radius: 18px; color: #fff; animation: quizWinPop .45s ease-out; }
+    #quizModal .quiz-win-banner.red { background: linear-gradient(135deg, #dc2626, #f87171); }
+    #quizModal .quiz-win-banner.green { background: linear-gradient(135deg, #15803d, #4ade80); }
+    #quizModal .quiz-win-flag { flex: none; display: grid; place-items: center; width: 68px; height: 68px; border-radius: 50%; background: #fff; font-size: 42px; font-weight: 1000; line-height: 1; box-shadow: 0 3px 8px #0003; }
+    #quizModal .quiz-win-banner.red .quiz-win-flag { color: #dc2626; }
+    #quizModal .quiz-win-banner.green .quiz-win-flag { color: #16a34a; }
+    #quizModal .quiz-win-banner strong { display: block; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.15; font-weight: 1000; text-shadow: 0 2px 3px #0003; }
+    #quizModal .quiz-win-banner span:not(.quiz-win-flag) { font-size: 22px; font-weight: 800; }
+    #quizModal .quiz-no-win { color: #6b6b5c; }
+    #quizModal .quiz-review.team-red, #quizModal .quiz-review.team-green { border-top: 0; border-left: 6px solid; padding: 10px 14px; margin: 10px 0; border-radius: 10px; }
+    #quizModal .quiz-review.team-red { border-left-color: #dc2626; background: #fef2f2; }
+    #quizModal .quiz-review.team-green { border-left-color: #16a34a; background: #f0fdf4; }
+    #quizModal .quiz-team-tag { display: inline-block; color: #fff; font-size: 15px; padding: 2px 10px; border-radius: 999px; margin-right: 8px; vertical-align: 2px; }
+    #quizModal .quiz-team-tag.red { background: #dc2626; }
+    #quizModal .quiz-team-tag.green { background: #16a34a; }
+    #quizModal .quiz-verdict.correct b { color: #15803d; }
+    #quizModal .quiz-verdict.wrong b { color: #b91c1c; }
+    @keyframes quizWinPop { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { #quizModal .quiz-win-banner { animation: none; } }
     #quizModal .quiz-review h4 { margin: 0 0 8px; font-size: 20px; }
     #quizModal .quiz-review p { margin: 5px 0; font-weight: 500; font-size: 17px; }
     #quizModal .quiz-review a { color: #175f72; font-weight: 700; }
@@ -1012,7 +1034,7 @@
           <button id="fullMode" class="mode-btn">全馬 13 點</button>
           <button id="resetBtn" class="mode-btn">重新開始</button>
           <button id="demoFinishBtn" class="mode-btn demo-finish-btn" type="button">🎉 模擬比賽結束</button>
-        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartReset" type="button" disabled>裁判歸零</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r35</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
+        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartReset" type="button" disabled>裁判歸零</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r36</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
       </div>
 
       <div class="map-wrap">
@@ -1157,7 +1179,7 @@
 
   <script src="./learning-cards/game-cards.js"></script>
   <script src="./learning-cards/quiz-demo-data.js"></script>
-  <script src="./learning-cards/quiz-demo.js?v=ai-r21"></script>
+  <script src="./learning-cards/quiz-demo.js?v=r36"></script>
 <script src="shared/race-input.js?v=uart-r31"></script><script src="shared/referee-link.js?v=uart-r34"></script>
 <script>
     const geoJsonUrl = "https://raw.githubusercontent.com/titaneric/Taiwan-GeoJSON/master/%E5%8D%97%E6%8A%95%E7%B8%A3%E9%84%89%E9%8E%AE.json";
