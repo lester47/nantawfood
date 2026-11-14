@@ -1,10 +1,11 @@
 (function(root) {
   class RefereeLink {
     constructor({onFrame,onState,onInvalid}) {Object.assign(this,{onFrame,onState,onInvalid});this.port=null;this.reader=null;this.task=null;this.closing=false;this.outgoing=Promise.resolve();}
-    async connect() {
+    // r34：connect({port,initCommand})。port 為先前授權過的裝置時不需再選擇；initCommand 預設 STATUS，頁面載入後首次連線改送 RESET。
+    async connect({port=null,initCommand='STATUS'}={}) {
       if(this.port) return;
       if(!navigator.serial||!window.isSecureContext)throw new Error('請使用電腦版 Chrome／Edge，從 localhost 或 HTTPS 開啟');
-      const selected=await navigator.serial.requestPort();
+      const selected=port||await navigator.serial.requestPort();
       await selected.open({baudRate:RaceInput.CONFIG.baudRate,dataBits:8,stopBits:1,parity:'none',flowControl:'none'});
       this.port=selected;this.closing=false;this.onState('connected','USB 已連接，等待裁判進度');
       const parser=new RaceInput.ShortFrameReceiver(p=>{
@@ -14,7 +15,7 @@
       },raw=>this.onInvalid(raw));
       this.task=this.read(selected,parser);
       void this.task.then(()=>{if(!this.closing&&this.port===selected){this.onState('disconnected','USB 已中斷，請重新連線');void this.disconnect();}});
-      try {await this.send('STATUS');}catch(e){this.onState('warning',`初始查詢失敗：${e.message}`);}
+      try {await this.send(initCommand);}catch(e){this.onState('warning',`初始查詢失敗：${e.message}`);}
     }
     async read(port,parser) {
       const decoder=new TextDecoder();

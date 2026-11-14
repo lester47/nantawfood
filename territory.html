@@ -1012,7 +1012,7 @@
           <button id="fullMode" class="mode-btn">全馬 13 點</button>
           <button id="resetBtn" class="mode-btn">重新開始</button>
           <button id="demoFinishBtn" class="mode-btn demo-finish-btn" type="button">🎉 模擬比賽結束</button>
-        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r33</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
+        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartReset" type="button" disabled>裁判歸零</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r34</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
       </div>
 
       <div class="map-wrap">
@@ -1158,7 +1158,7 @@
   <script src="./learning-cards/game-cards.js"></script>
   <script src="./learning-cards/quiz-demo-data.js"></script>
   <script src="./learning-cards/quiz-demo.js?v=ai-r21"></script>
-<script src="shared/race-input.js?v=uart-r31"></script><script src="shared/referee-link.js?v=uart-r11"></script>
+<script src="shared/race-input.js?v=uart-r31"></script><script src="shared/referee-link.js?v=uart-r34"></script>
 <script>
     const geoJsonUrl = "https://raw.githubusercontent.com/titaneric/Taiwan-GeoJSON/master/%E5%8D%97%E6%8A%95%E7%B8%A3%E9%84%89%E9%8E%AE.json";
 
@@ -1266,6 +1266,17 @@
     const usbLink=new RefereeLink({
       onFrame:p=>{
         $("uartRaw").textContent=p.frame;
+        // r34：網頁載入後（或按裁判歸零後）必須先收到 (A,00,B,00)，才採用裁判進度，避免沿用上一場跑到一半的步數。
+        if(pendingReset){
+          if(p.a!==0||p.b!==0){
+            $("refereeHint").textContent=`裁判仍有舊進度（紅 ${p.a}／綠 ${p.b}），已送出歸零指令；若沒有變成 0，請在裁判 micro:bit 按 A 手動歸零。`;
+            if(!resetRetried){resetRetried=true;void usbLink.send('RESET').catch(()=>{});}
+            return;
+          }
+          pendingReset=false;resetRetried=false;usbBase={a:0,b:0};
+          $("refereeHint").textContent="裁判與網頁已同步歸零，可以開始比賽。";
+          if(!state.introPlaying&&!state.quizActive&&!state.readyTeam){usbGate.receive('uart',p);return;}
+        }
         if(state.gameOver||state.introPlaying||state.quizActive||state.readyTeam){usbGate.latest=p;return;}
         const applied=usbGate.receive('uart',p);
         if(applied)$("refereeHint").textContent=p.a===10||p.b===10?"已達標，請選擇鄉鎮。完成回合後請裁判歸零。":"已同步裁判累計進度。";
@@ -1273,10 +1284,33 @@
       onInvalid:raw=>{$("uartInvalid").textContent=`異常封包：${++invalidUsb}；${raw}`;},
       onState:(kind,message)=>{
         usbActive=!!usbLink.port;if(kind==='connected')usbBase={a:0,b:0};$("uartStatus").textContent=message;
-        $("uartConnect").disabled=usbActive;$("uartDisconnect").disabled=!usbActive;$("uartQuery").disabled=!usbActive;
+        $("uartConnect").disabled=usbActive;$("uartDisconnect").disabled=!usbActive;$("uartQuery").disabled=!usbActive;$("uartReset").disabled=!usbActive;
       }
     });
-    $("uartConnect").onclick=async()=>{if(state.readyTeam||state.introPlaying||state.quizActive){$("refereeHint").textContent="請先完成目前回合再連接。";return;}$("uartConnect").disabled=true;try{await usbLink.connect();}catch(e){$("refereeHint").textContent="連線未完成："+e.message;}finally{$("uartConnect").disabled=!!usbLink.port;}};
+    // r34：網頁載入（含重新整理、重新開始）後第一次連上裁判時送 RESET，讓裁判與網頁一起歸零；比賽中 USB 鬆脫重連則不歸零。
+    let pendingReset=false, resetRetried=false, resetDoneThisPage=false;
+    async function connectReferee(port=null){
+      const reset=!resetDoneThisPage;
+      if(reset){pendingReset=true;resetRetried=false;}
+      await usbLink.connect({port,initCommand:reset?'RESET':'STATUS'});
+      if(usbLink.port&&reset){resetDoneThisPage=true;if(pendingReset)$("refereeHint").textContent="已送出裁判歸零指令，等待裁判回傳 0：0……";}
+    }
+    $("uartConnect").onclick=async()=>{if(state.readyTeam||state.introPlaying||state.quizActive){$("refereeHint").textContent="請先完成目前回合再連接。";return;}$("uartConnect").disabled=true;try{await connectReferee();}catch(e){pendingReset=false;$("refereeHint").textContent="連線未完成："+e.message;}finally{$("uartConnect").disabled=!!usbLink.port;}};
+    $("uartReset").onclick=()=>{
+      if(state.readyTeam||state.introPlaying||state.quizActive){$("refereeHint").textContent="答題中不能歸零，請先完成目前回合。";return;}
+      pendingReset=true;resetRetried=false;manualAdd={red:0,green:0};usbBase={a:0,b:0};
+      state.redSteps=0;state.greenSteps=0;updateUI();
+      $("refereeHint").textContent="已送出裁判歸零指令，等待裁判回傳 0：0……";
+      usbLink.send('RESET').catch(e=>$("refereeHint").textContent=e.message);
+    };
+    // r34：這台電腦先前授權過裁判裝置時，重新整理後自動重連並歸零（只有一台時才自動連，避免連錯裝置）。
+    if(navigator.serial&&window.isSecureContext){
+      navigator.serial.getPorts().then(ports=>{
+        if(ports.length!==1||usbLink.port)return;
+        $("refereeHint").textContent="偵測到先前連過的裁判裝置，自動重新連線並歸零……";
+        return connectReferee(ports[0]);
+      }).catch(e=>{pendingReset=false;$("refereeHint").textContent="自動連線未完成，請按「USB 連接裁判」："+e.message;});
+    }
     $("uartQuery").onclick=()=>usbLink.send('STATUS').catch(e=>$("refereeHint").textContent=e.message);
     $("uartDisconnect").onclick=()=>usbLink.disconnect().catch(e=>$("refereeHint").textContent=e.message);
 
