@@ -142,13 +142,7 @@
         append(words, 'strong', `${teamName(winnerTeam)}答對！`);
         append(words, 'span', `${ownerBefore === winnerTeam ? '守住' : '搶下'} ${town}`);
         // r39：領地歸屬確定時，用語音簡短報讀結果。
-        try {
-          window.speechSynthesis.cancel();
-          const announce = new SpeechSynthesisUtterance(`${teamName(winnerTeam)}答對，${ownerBefore === winnerTeam ? '守住' : '搶下'}${town}！`);
-          announce.lang = 'zh-TW';
-          announce.rate = 1;
-          window.speechSynthesis.speak(announce);
-        } catch (error) { /* 不支援語音的瀏覽器只顯示畫面 */ }
+        window.NantouSpeech?.speak(`${teamName(winnerTeam)}答對，${ownerBefore === winnerTeam ? '守住' : '搶下'}${town}！`);
       } else {
         append(reviews, 'h3', summary, 'quiz-no-win');
       }
@@ -188,7 +182,7 @@
           const stop = append(teaching, 'button', '⏹ 結束語音');
           stop.type = 'button';
           const speakText = () => {
-            try { window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'zh-TW'; window.speechSynthesis.speak(utterance); } catch (error) { teaching.querySelector('.ai-teaching-status').textContent += '（此瀏覽器無法播放語音）'; }
+            if (!window.NantouSpeech?.speak(text)) teaching.querySelector('.ai-teaching-status').textContent += '（此瀏覽器無法播放語音）';
           };
           speak.onclick = speakText;
           pause.onclick = () => { try { if (pause.textContent.includes('繼續')) { window.speechSynthesis.resume(); pause.textContent = '⏸ 暫停語音'; } else { window.speechSynthesis.pause(); pause.textContent = '▶ 繼續語音'; } } catch (error) {} };
