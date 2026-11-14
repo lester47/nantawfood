@@ -1012,7 +1012,7 @@
           <button id="fullMode" class="mode-btn">全馬 13 點</button>
           <button id="resetBtn" class="mode-btn">重新開始</button>
           <button id="demoFinishBtn" class="mode-btn demo-finish-btn" type="button">🎉 模擬比賽結束</button>
-        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r32</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
+        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r33</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
       </div>
 
       <div class="map-wrap">
@@ -1240,7 +1240,6 @@
       introPlaying: false,
       quizActive: false,
       pendingChallenge: null,
-      nextAttackTeam: null,
       usedCardIds: {},
       roundIndex: 0
     };
@@ -1462,8 +1461,8 @@
       }
 
       if (state.pendingChallenge) return;
-      const team = state.nextAttackTeam || state.readyTeam;
-      state.nextAttackTeam = team;
+      // r33：跑滿 10 步取得選地資格的隊伍就是本回合先攻隊（取消紅綠輪流先攻）。
+      const team = state.readyTeam;
       state.pendingChallenge = {
         town,
         attackTeam: team,
@@ -1659,7 +1658,6 @@
           ![null, "red", "green"].includes(result.winnerTeam)) return;
       challenge.resolved = true;
       state.lastChallengeResult = result;
-      state.nextAttackTeam = challenge.attackTeam === "red" ? "green" : "red";
       state.roundIndex += 1;
       const ownerAfter = result.winnerTeam || challenge.ownerBefore;
       if (ownerAfter) state.occupied[challenge.town] = ownerAfter;
@@ -1677,7 +1675,6 @@
     function abortGameChallenge(town, team, message) {
       const challenge = state.pendingChallenge;
       if (challenge && !challenge.resolved) {
-        state.nextAttackTeam = team === "red" ? "green" : "red";
         state.roundIndex += 1;
       }
       state.lastChallengeResult = { outcome: "aborted", winnerTeam: null, town };
@@ -1769,7 +1766,7 @@
       } else if (state.introPlaying) {
         $("hintText").textContent = "請閱讀本回合抽到的食材圖卡，可重播語音，完成後再繼續。";
       } else if (state.readyTeam) {
-        $("hintText").textContent = `${state.readyTeam === "red" ? "紅隊" : "綠隊"}已取得選地資格。${state.nextAttackTeam ? `本回合由${state.nextAttackTeam === "red" ? "紅隊" : "綠隊"}先攻。` : "首回合由選地隊伍先攻。"}請點選尚未鎖定的鄉鎮，已攻佔領地不可再翻盤。`;
+        $("hintText").textContent = `${state.readyTeam === "red" ? "紅隊" : "綠隊"}已取得選地資格，本回合由${state.readyTeam === "red" ? "紅隊" : "綠隊"}先攻答題。請點選尚未鎖定的鄉鎮，已攻佔領地不可再翻盤。`;
       } else {
         $("hintText").textContent = `目前選擇隊伍為${state.currentTeam === "red" ? "紅隊" : "綠隊"}。跑滿 10 步後，地圖會進入可攻佔狀態。`;
       }
