@@ -141,6 +141,14 @@
         const words = append(banner, 'div');
         append(words, 'strong', `${teamName(winnerTeam)}答對！`);
         append(words, 'span', `${ownerBefore === winnerTeam ? '守住' : '搶下'} ${town}`);
+        // r39：領地歸屬確定時，用語音簡短報讀結果。
+        try {
+          window.speechSynthesis.cancel();
+          const announce = new SpeechSynthesisUtterance(`${teamName(winnerTeam)}答對，${ownerBefore === winnerTeam ? '守住' : '搶下'}${town}！`);
+          announce.lang = 'zh-TW';
+          announce.rate = 1;
+          window.speechSynthesis.speak(announce);
+        } catch (error) { /* 不支援語音的瀏覽器只顯示畫面 */ }
       } else {
         append(reviews, 'h3', summary, 'quiz-no-win');
       }
