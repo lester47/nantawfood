@@ -1012,7 +1012,7 @@
           <button id="fullMode" class="mode-btn">全馬 13 點</button>
           <button id="resetBtn" class="mode-btn">重新開始</button>
           <button id="demoFinishBtn" class="mode-btn demo-finish-btn" type="button">🎉 模擬比賽結束</button>
-        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartReset" type="button" disabled>裁判歸零</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r34</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
+        </div><section id="usbControls" aria-label="裁判USB連線"><div class="usb-buttons"><button id="uartConnect" type="button">USB 連接裁判</button><button id="uartQuery" type="button" disabled>更新進度</button><button id="uartReset" type="button" disabled>裁判歸零</button><button id="uartDisconnect" type="button" disabled>中斷連線</button></div><details class="usb-info"><summary id="uartStatus" role="status">USB 未連線</summary><div class="usb-popover"><p id="refereeHint">連接裁判裝置後選擇 USB。請使用電腦版 Chrome／Edge。</p><p>9600 baud · A 紅隊／B 綠隊 · 網頁版本 r35</p><pre id="uartRaw">尚未收到資料</pre><p id="uartInvalid">異常封包：0</p></div></details></section></div>
       </div>
 
       <div class="map-wrap">
@@ -1269,7 +1269,7 @@
         // r34：網頁載入後（或按裁判歸零後）必須先收到 (A,00,B,00)，才採用裁判進度，避免沿用上一場跑到一半的步數。
         if(pendingReset){
           if(p.a!==0||p.b!==0){
-            $("refereeHint").textContent=`裁判仍有舊進度（紅 ${p.a}／綠 ${p.b}），已送出歸零指令；若沒有變成 0，請在裁判 micro:bit 按 A 手動歸零。`;
+            $("refereeHint").textContent=`裁判仍有舊進度（紅 ${p.a}／綠 ${p.b}），已送出歸零指令；若沒有變成 0，請在裁判 micro:bit 先按 A+B、再按 A 手動歸零（或更新裁判程式）。`;
             if(!resetRetried){resetRetried=true;void usbLink.send('RESET').catch(()=>{});}
             return;
           }
