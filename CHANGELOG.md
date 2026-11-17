@@ -1,3 +1,7 @@
+## r45 移除圖卡「draft」標記（2026-11-17）
+
+learning-cards/manifest.json 中 104 張圖卡移除 review_status: "draft"（草稿）欄位。此欄位沒有程式讀取，圖卡內容與畫面不變。更新快取版本為 r45，USB 狀態區顯示「網頁版本 r45」。修改前版本保留在 backup-r44-before-remove-draft 分支。
+
 ## r44 移除「待教師審核」標記（2026-11-17）
 
 104 張圖卡的 208 題題目資料移除「待教師審核」（pending_teacher_review）標記：shared/data/content.json 的 review 欄位、learning-cards/quiz-demo-data.js 的 reviewStatus 欄位，以及 islands/overview/src/roles.js 的註解。這些欄位沒有程式讀取，題目、答案、解說與玩法不變。更新快取版本為 r44，USB 狀態區顯示「網頁版本 r44」。修改前版本保留在 backup-r43-before-remove-review 分支。
