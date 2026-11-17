@@ -1,3 +1,7 @@
+## r44 移除「待教師審核」標記（2026-11-17）
+
+104 張圖卡的 208 題題目資料移除「待教師審核」（pending_teacher_review）標記：shared/data/content.json 的 review 欄位、learning-cards/quiz-demo-data.js 的 reviewStatus 欄位，以及 islands/overview/src/roles.js 的註解。這些欄位沒有程式讀取，題目、答案、解說與玩法不變。更新快取版本為 r44，USB 狀態區顯示「網頁版本 r44」。修改前版本保留在 backup-r43-before-remove-review 分支。
+
 ## r43 食農島語音介紹（2026-11-14）
 
 食農島點選食材打開圖卡，或按 ◀ ▶ 切換食材時，自動以語音朗讀「食材名稱＋介紹」（不讀過敏提示）；關閉圖卡即停止。圖卡上方新增「🔊 重播」與「語音：開／關」，開關狀態記在該瀏覽器。新增 islands/overview-voice.js，觀察圖卡內容變化即可，不修改 3D 主程式；朗讀沿用 shared/speech.js（開頭不吃字）。修改前版本保留在 backup-r42-before-islands-voice 分支。

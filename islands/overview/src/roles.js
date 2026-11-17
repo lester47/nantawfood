@@ -1,5 +1,5 @@
 // Role descriptions for villagers — framed by the six guiding principles of Taiwan's 食農教育法 (Art. 4).
-// All characters are fictional illustrations; content awaits teacher review.
+// All characters are fictional illustrations.
 export const ROLES={
  farmerM:{icon:'👨‍🌾',name:'農夫',tag:'生產者',cls:'pro',stage:'生產',
   does:'照顧土地和作物，看天氣決定什麼時候播種、採收。',you:'吃飯前想一想：這是誰種的？',principle:'支持認同在地農業'},
