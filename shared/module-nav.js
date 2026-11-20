@@ -17,8 +17,8 @@
   nav.id = 'platform-module-nav';
   nav.setAttribute('aria-label','食農平台模組切換');
   nav.style.cssText='position:fixed;right:10px;top:8px;z-index:10000;display:flex;flex-wrap:wrap;gap:6px;max-width:90vw;padding:7px;border-radius:14px;background:#fffef2ee;box-shadow:0 2px 10px #0003;font:14px sans-serif';
-  const links = [['平台首頁','index.html'],['領地戰','territory.html'],['食農島','islands/nantou-overview-v3.html'],['共用圖卡','learning-cards/index.html'],['食農遊樂園','https://padlet.com/lester471/padlet-s0254rx5u8gyx7usj57e']].map(([label,path])=>{
-    const a=document.createElement('a'); a.textContent=label;a.dataset.path=path;if(path.startsWith('https://')){a.target='_blank';a.rel='noopener noreferrer';a.setAttribute('aria-label',label+'（另開分頁）');}
+  const links = [['平台首頁','index.html','platform'],['領地戰','territory.html','territory'],['食農島','islands/nantou-overview-v3.html','islands'],['共用圖卡','learning-cards/index.html','cards'],['食農遊樂園','https://padlet.com/lester471/padlet-s0254rx5u8gyx7usj57e','playground']].map(([label,path,icon])=>{
+    const a=document.createElement('a'); const img=document.createElement('img'); img.src=new URL('favicons/'+icon+'.svg?v=fav1',root).href; img.alt=''; img.width=18; img.height=18; img.style.cssText='width:18px;height:18px;margin:0 5px 0 0;flex:none;display:block;border:0'; a.append(img,label);a.dataset.path=path;if(path.startsWith('https://')){a.target='_blank';a.rel='noopener noreferrer';a.setAttribute('aria-label',label+'（另開分頁）');}
     a.style.cssText='display:inline-flex;align-items:center;color:#244f36;padding:5px;text-decoration:underline;font:14px/1.5 sans-serif;border:0;border-radius:6px;background:transparent;box-shadow:none;margin:0;white-space:nowrap'; nav.append(a); return a;
   });
   function update() {
